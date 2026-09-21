@@ -1,0 +1,120 @@
+.sighting-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sighting-list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.sighting-list h2 {
+  margin: 0;
+}
+
+.sort-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #d8e2eb;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--blue);
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sort-switch svg {
+  width: 15px;
+  height: 15px;
+}
+
+.view-menu {
+  position: relative;
+}
+
+.view-button,
+.gps-filter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  border: 1px solid #d8e2eb;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--blue);
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.view-button svg {
+  width: 15px;
+  height: 15px;
+}
+
+.gps-filter {
+  width: 34px;
+  padding: 6px;
+  color: var(--muted);
+}
+
+.gps-filter.active {
+  border-color: var(--blue);
+  background: #f0f7ff;
+  color: var(--blue);
+}
+
+.gps-filter svg {
+  width: 17px;
+  height: 17px;
+}
+
+.view-menu-panel {
+  position: absolute;
+  z-index: 3;
+  top: calc(100% + 6px);
+  right: 0;
+  display: grid;
+  min-width: 160px;
+  padding: 5px;
+  border: 1px solid #d8e2eb;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 8px 24px #102a4330;
+}
+
+.view-option {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--navy);
+  padding: 8px 9px;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.view-option:hover,
+.view-option.selected {
+  background: #f0f7ff;
+  color: var(--blue);
+}
+
+.view-option svg {
+  width: 15px;
+  height: 15px;
+}

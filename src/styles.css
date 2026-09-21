@@ -419,29 +419,31 @@ textarea {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 15px;
+  gap: 10px;
   margin-top: 12px;
   font-size: 0.8rem;
   color: var(--muted);
 }
-.legend-filter,
-.reset-filter {
+.filter-group {
+  display: inline-flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+.legend-filter {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 0;
   border: 0;
   background: transparent;
   color: inherit;
+  padding: 0;
   font: inherit;
+  font-size: 0.8rem;
   cursor: pointer;
 }
 .legend-filter.inactive {
   opacity: 0.35;
-}
-.reset-filter {
-  color: var(--blue);
-  font-weight: 800;
 }
 .map-legend i {
   display: inline-block;
@@ -687,9 +689,6 @@ textarea {
 }
 .sighting-list {
   margin-top: 28px;
-}
-.sighting-list h2 {
-  margin-bottom: 10px;
 }
 .sighting-row {
   width: 100%;

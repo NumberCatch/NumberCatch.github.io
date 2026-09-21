@@ -18,10 +18,25 @@ import { AuthService } from './auth.service';
 import { Sighting } from './models';
 import { SupabaseService } from './supabase.service';
 import { environment } from '../environments/environment';
-import { LucideMapPin, LucideTrash } from '@lucide/angular';
+import {
+  LucideArrowDownUp,
+  LucideCheck,
+  LucideChevronDown,
+  LucideMapPin,
+  LucideTrash,
+} from '@lucide/angular';
 
 type SightingStatus = 'confirmed' | 'fresh' | 'old' | 'stale';
+type SightingSort = 'number' | 'newest' | 'distance';
+type SightingView = 'all' | 'nextFive' | 'open' | 'completed';
 type MapCenter = [number, number];
+
+interface MapFilterPreferences {
+  visibleStatuses: SightingStatus[];
+  view: SightingView;
+  gpsOnly: boolean;
+  sortOrder: SightingSort;
+}
 
 interface MapViewport {
   center: MapCenter;
@@ -30,85 +45,16 @@ interface MapViewport {
 
 @Component({
   standalone: true,
-  imports: [CommonModule, LucideMapPin, LucideTrash],
-  template: `<section class="page">
-    <div class="page-heading">
-      <div>
-        <p class="eyebrow">PRIVATE KARTE</p>
-        <h1>Deine Funde</h1>
-      </div>
-    </div>
-    <div #map class="map"></div>
-    <div class="map-legend">
-      <button
-        *ngFor="let option of statusOptions"
-        type="button"
-        class="legend-filter"
-        [class.inactive]="!isStatusVisible(option.status)"
-        [attr.aria-pressed]="isStatusVisible(option.status)"
-        (click)="toggleStatus(option.status)"
-      >
-        <i [ngClass]="option.status"></i>{{ option.label }}
-      </button>
-      <button type="button" class="reset-filter" (click)="showAllStatuses()">Alle</button>
-    </div>
-    <p class="muted map-note">Nur du siehst die GPS-Standorte deiner eigenen Funde.</p>
-    @if (loadError()) {
-      <p class="error">{{ loadError() }}</p>
-    }
-    @if (sightings().length) {
-      <div class="sighting-list">
-        <h2>Funde</h2>
-        @if (!visibleSightings().length) {
-          <p class="muted">Keine Funde für diese Filter.</p>
-        }
-        <div
-          class="sighting-row"
-          [class.selected]="selectedSightingId() === sighting.id"
-          *ngFor="let sighting of visibleSightings()"
-          (click)="focus(sighting)"
-          role="button"
-          tabindex="0"
-          [attr.aria-pressed]="selectedSightingId() === sighting.id"
-          (keydown.enter)="focus(sighting)"
-        >
-          <span class="sighting-number" [ngClass]="statusClass(sighting)">{{
-            sighting.number
-          }}</span>
-          @if (sighting.latitude !== null && sighting.longitude !== null) {
-            <svg class="sighting-location" lucideMapPin aria-label="Standort vorhanden"></svg>
-          }
-          <span class="sighting-details"
-            ><strong>{{
-              sighting.type === 'confirmed' ? 'Bestätigt' : ageLabel(sighting.created_at)
-            }}</strong
-            ><small
-              >{{ sighting.created_at | date: 'dd.MM.yyyy, HH:mm' }} Uhr
-              @if (sighting.note) {
-                <span> · {{ sighting.note }}</span>
-              }
-            </small></span
-          >
-          @if (sighting.type === 'hint') {
-            <button
-              class="delete-button"
-              type="button"
-              (click)="remove(sighting, $event)"
-              aria-label="Vormerkung löschen"
-              title="Vormerkung löschen"
-            >
-              <svg lucideTrash></svg>
-            </button>
-          }
-        </div>
-      </div>
-    } @else {
-      <div class="empty-state compact">
-        <h2>Noch keine Funde</h2>
-        <p class="muted">Spätere Zahlen kannst du beim Erfassen vormerken.</p>
-      </div>
-    }
-  </section>`,
+  imports: [
+    CommonModule,
+    LucideArrowDownUp,
+    LucideCheck,
+    LucideChevronDown,
+    LucideMapPin,
+    LucideTrash,
+  ],
+  styleUrl: './map.component.css',
+  templateUrl: './map.component.html',
 })
 export class MapComponent implements AfterViewInit, OnDestroy {
   @ViewChild('map', { static: true }) mapElement!: ElementRef<HTMLDivElement>;
@@ -117,10 +63,17 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   private readonly viewportStorageKey = 'number-catch-map-viewport';
   private map?: MapLibreMap;
   private geolocateControl?: GeolocateControl;
+  private userLocation?: MapCenter;
+  private distanceReference?: MapCenter;
   private activePopup?: Popup;
   private readonly markers = new Map<string, Marker>();
+  private readonly filterStorageKey = 'number-catch-map-filters-v2';
   readonly sightings = signal<Sighting[]>([]);
   readonly selectedSightingId = signal<string | null>(null);
+  readonly view = signal<SightingView>('all');
+  readonly viewMenuOpen = signal(false);
+  readonly gpsOnly = signal(false);
+  readonly sortOrder = signal<SightingSort>('number');
   readonly loadError = signal('');
   readonly statusOptions: ReadonlyArray<{ status: SightingStatus; label: string }> = [
     { status: 'confirmed', label: 'bestätigt' },
@@ -128,9 +81,22 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     { status: 'old', label: 'älter' },
     { status: 'stale', label: 'veraltet' },
   ];
+  readonly viewOptions: ReadonlyArray<{ view: SightingView; label: string }> = [
+    { view: 'all', label: 'Alle' },
+    { view: 'nextFive', label: 'Nächste 5' },
+    { view: 'open', label: 'Offen' },
+    { view: 'completed', label: 'Abgeschlossen' },
+  ];
   readonly visibleStatuses = signal<Set<SightingStatus>>(
     new Set(this.statusOptions.map((option) => option.status)),
   );
+  constructor() {
+    const preferences = this.loadFilterPreferences();
+    this.visibleStatuses.set(new Set(preferences.visibleStatuses));
+    this.view.set(preferences.view);
+    this.gpsOnly.set(preferences.gpsOnly);
+    this.sortOrder.set(preferences.sortOrder);
+  }
   ngAfterViewInit(): void {
     const viewport = this.loadViewport();
     this.map = new maplibregl.Map({
@@ -142,6 +108,13 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     this.geolocateControl = new maplibregl.GeolocateControl({
       positionOptions: { enableHighAccuracy: true },
       trackUserLocation: false,
+    });
+    this.geolocateControl.on('geolocate', (event) => {
+      this.userLocation = [event.coords.longitude, event.coords.latitude];
+      if (this.sortOrder() === 'distance') {
+        this.distanceReference = this.userLocation;
+        this.updateMarkerVisibility();
+      }
     });
     this.map.addControl(this.geolocateControl, 'top-right');
     this.map.on('moveend', () => this.saveViewport());
@@ -228,32 +201,170 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   }
   visibleSightings(): Sighting[] {
     const visibleStatuses = this.visibleStatuses();
-    return this.sightings().filter((sighting) => visibleStatuses.has(this.statusClass(sighting)));
+    const currentNumber = this.auth.profile()?.current_number ?? 0;
+    let sightings = this.sightings()
+      .filter((sighting) => visibleStatuses.has(this.statusClass(sighting)))
+      .filter(
+        (sighting) =>
+          !this.gpsOnly() || (sighting.latitude !== null && sighting.longitude !== null),
+      );
+    if (this.view() === 'nextFive') {
+      sightings = sightings
+        .filter((sighting) => sighting.number > currentNumber)
+        .sort((left, right) => left.number - right.number)
+        .slice(0, 5);
+    } else if (this.view() === 'open') {
+      sightings = sightings.filter((sighting) => sighting.number > currentNumber);
+    } else if (this.view() === 'completed') {
+      sightings = sightings.filter((sighting) => sighting.number <= currentNumber);
+    }
+    return sightings.sort((left, right) => this.compareSightings(left, right));
   }
   isStatusVisible(status: SightingStatus): boolean {
     return this.visibleStatuses().has(status);
+  }
+  isView(view: SightingView): boolean {
+    return this.view() === view;
+  }
+  viewLabel(): string {
+    return this.viewOptions.find((option) => option.view === this.view())?.label ?? 'Alle';
   }
   toggleStatus(status: SightingStatus): void {
     const statuses = new Set(this.visibleStatuses());
     if (statuses.has(status)) statuses.delete(status);
     else statuses.add(status);
     this.visibleStatuses.set(statuses);
+    this.saveFilterPreferences();
     this.updateMarkerVisibility();
   }
-  showAllStatuses(): void {
-    this.visibleStatuses.set(new Set(this.statusOptions.map((option) => option.status)));
+  setView(view: SightingView): void {
+    this.view.set(view);
+    this.viewMenuOpen.set(false);
+    this.saveFilterPreferences();
     this.updateMarkerVisibility();
+  }
+  toggleViewMenu(): void {
+    this.viewMenuOpen.update((open) => !open);
+  }
+  toggleGpsOnly(): void {
+    this.gpsOnly.update((value) => !value);
+    this.saveFilterPreferences();
+    this.updateMarkerVisibility();
+  }
+  toggleSort(): void {
+    const sortOrders: SightingSort[] = ['number', 'newest', 'distance'];
+    const currentIndex = sortOrders.indexOf(this.sortOrder());
+    const nextSort = sortOrders[(currentIndex + 1) % sortOrders.length];
+    if (nextSort === 'distance') this.distanceReference = this.userLocation ?? this.mapCenter();
+    this.sortOrder.set(nextSort);
+    this.saveFilterPreferences();
+    this.updateMarkerVisibility();
+  }
+  sortLabel(): string {
+    return this.sortOrder() === 'number'
+      ? 'Nummer'
+      : this.sortOrder() === 'newest'
+        ? 'Neueste'
+        : 'Entfernung';
   }
   private updateMarkerVisibility(): void {
-    const visibleStatuses = this.visibleStatuses();
+    const visibleIds = new Set(this.visibleSightings().map((sighting) => sighting.id));
+    const selectedId = this.selectedSightingId();
+    if (selectedId && !visibleIds.has(selectedId)) {
+      this.activePopup?.remove();
+      this.selectedSightingId.set(null);
+    }
     for (const sighting of this.sightings()) {
       const marker = this.markers.get(sighting.id);
       if (marker) {
-        marker.getElement().style.display = visibleStatuses.has(this.statusClass(sighting))
-          ? ''
-          : 'none';
+        marker.getElement().style.display = visibleIds.has(sighting.id) ? '' : 'none';
       }
     }
+  }
+  private loadFilterPreferences(): MapFilterPreferences {
+    const defaults = {
+      visibleStatuses: this.statusOptions.map((option) => option.status),
+      view: 'all' as SightingView,
+      gpsOnly: false,
+      sortOrder: 'number' as SightingSort,
+    };
+    try {
+      const stored = window.localStorage.getItem(this.filterStorageKey);
+      if (!stored) return defaults;
+      const value: unknown = JSON.parse(stored);
+      if (!value || typeof value !== 'object') return defaults;
+      const preferences = value as Partial<MapFilterPreferences>;
+      const visibleStatuses = Array.isArray(preferences.visibleStatuses)
+        ? preferences.visibleStatuses.filter((status): status is SightingStatus =>
+            this.statusOptions.some((option) => option.status === status),
+          )
+        : defaults.visibleStatuses;
+      return {
+        visibleStatuses,
+        view:
+          preferences.view === 'all' ||
+          preferences.view === 'nextFive' ||
+          preferences.view === 'open' ||
+          preferences.view === 'completed'
+            ? preferences.view
+            : defaults.view,
+        gpsOnly: typeof preferences.gpsOnly === 'boolean' ? preferences.gpsOnly : defaults.gpsOnly,
+        sortOrder:
+          preferences.sortOrder === 'number' ||
+          preferences.sortOrder === 'newest' ||
+          preferences.sortOrder === 'distance'
+            ? preferences.sortOrder
+            : defaults.sortOrder,
+      };
+    } catch {
+      return defaults;
+    }
+  }
+  private saveFilterPreferences(): void {
+    try {
+      window.localStorage.setItem(
+        this.filterStorageKey,
+        JSON.stringify({
+          visibleStatuses: [...this.visibleStatuses()],
+          view: this.view(),
+          gpsOnly: this.gpsOnly(),
+          sortOrder: this.sortOrder(),
+        }),
+      );
+    } catch {
+      // Local storage may be unavailable in private browsing mode.
+    }
+  }
+  private compareSightings(left: Sighting, right: Sighting): number {
+    if (this.sortOrder() === 'newest') {
+      return Date.parse(right.created_at) - Date.parse(left.created_at);
+    }
+    if (this.sortOrder() === 'distance') {
+      const reference = this.distanceReference ?? (this.distanceReference = this.mapCenter());
+      if (reference) return this.distance(left, reference) - this.distance(right, reference);
+    }
+    return left.number - right.number;
+  }
+  private mapCenter(): MapCenter | undefined {
+    if (!this.map) return undefined;
+    const center = this.map.getCenter();
+    return [center.lng, center.lat];
+  }
+  private distance(sighting: Sighting, reference: MapCenter): number {
+    if (sighting.latitude === null || sighting.longitude === null) {
+      return Number.POSITIVE_INFINITY;
+    }
+    const earthRadiusKm = 6371;
+    const latitude = (sighting.latitude * Math.PI) / 180;
+    const referenceLatitude = (reference[1] * Math.PI) / 180;
+    const latitudeDelta = ((sighting.latitude - reference[1]) * Math.PI) / 180;
+    const longitudeDelta = ((sighting.longitude - reference[0]) * Math.PI) / 180;
+    const value =
+      Math.sin(latitudeDelta / 2) ** 2 +
+      Math.cos(latitude) *
+        Math.cos(referenceLatitude) *
+        Math.sin(longitudeDelta / 2) ** 2;
+    return earthRadiusKm * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
   }
   private loadViewport(): MapViewport {
     const defaultViewport: MapViewport = { center: [10.45, 51.16], zoom: 5 };
