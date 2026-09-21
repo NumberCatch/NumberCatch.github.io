@@ -26,57 +26,62 @@
         <mgl-marker
           [lngLat]="[sighting.longitude, sighting.latitude]"
           anchor="bottom"
-          [popupShown]="selectedSightingId() === sighting.id"
         >
           <div
             class="number-marker"
             [class.selected]="selectedSightingId() === sighting.id"
             [style.background-color]="statusColor(sighting)"
-            (click)="selectFromMarker(sighting)"
+            (click)="$event.stopPropagation(); selectFromMarker(sighting)"
           >
             {{ sighting.number }}
           </div>
-          <mgl-popup
-            anchor="bottom"
-            [offset]="0"
-            [closeOnClick]="false"
-            (popupClose)="closePopup(sighting)"
-          >
-            <div class="map-popup-content">
-              <strong
-                >{{ sighting.number }} ·
-                {{
-                  sighting.type === 'confirmed' ? 'Bestätigt' : ageLabel(sighting.created_at)
-                }}</strong
-              >
-              <small>{{ sighting.created_at | date: 'dd.MM.yyyy, HH:mm' }} Uhr</small>
-              @if (sighting.note) {
-                <span>{{ sighting.note }}</span>
-              }
-              <a
-                class="popup-route"
-                [href]="routeUrl(sighting)"
-                target="_blank"
-                rel="noopener noreferrer"
-                >Route planen</a
-              >
-            </div>
-          </mgl-popup>
         </mgl-marker>
+      }
+    }
+    @if (selectedSighting(); as sighting) {
+      @if (sighting.latitude !== null && sighting.longitude !== null) {
+        <mgl-popup
+          [lngLat]="[sighting.longitude, sighting.latitude]"
+          anchor="bottom"
+          [offset]="[0, -42]"
+          [closeOnClick]="false"
+          (popupClose)="closePopup(sighting)"
+        >
+          <div class="map-popup-content">
+            <strong
+              >{{ sighting.number }} ·
+              {{
+                sighting.type === 'confirmed' ? 'Bestätigt' : ageLabel(sighting.created_at)
+              }}</strong
+            >
+            <small>{{ sighting.created_at | date: 'dd.MM.yyyy, HH:mm' }} Uhr</small>
+            @if (sighting.note) {
+              <span>{{ sighting.note }}</span>
+            }
+            <a
+              class="popup-route"
+              [href]="routeUrl(sighting)"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Route planen</a
+            >
+          </div>
+        </mgl-popup>
       }
     }
   </mgl-map>
   <div class="map-legend">
-    <mat-button-toggle-group multiple aria-label="Status filtern">
-      @for (option of statusOptions; track option) {
-        <mat-button-toggle
-          [checked]="isStatusVisible(option.status)"
-          (change)="toggleStatus(option.status)"
-        >
-          <i [ngClass]="option.status"></i>{{ option.label }}
-        </mat-button-toggle>
-      }
-    </mat-button-toggle-group>
+    @for (option of statusOptions; track option.status) {
+      <button
+        type="button"
+        class="legend-option"
+        [class.active]="isStatusVisible(option.status)"
+        [attr.aria-pressed]="isStatusVisible(option.status)"
+        (click)="toggleStatus(option.status)"
+      >
+        <i [ngClass]="option.status"></i>{{ option.label }}
+      </button>
+    }
   </div>
   <p class="muted map-note">Nur du siehst die GPS-Standorte deiner eigenen Funde.</p>
   @if (loadError()) {
@@ -87,21 +92,26 @@
       <div class="sighting-list-heading">
         <h2>Funde</h2>
         <div class="sighting-actions">
-          <button mat-stroked-button [matMenuTriggerFor]="viewMenu">
-            {{ viewLabel() }}<svg lucideChevronDown aria-hidden="true"></svg>
+          <button type="button" class="control-button" [matMenuTriggerFor]="viewMenu">
+            <span class="view-button-content"
+              >{{ viewLabel() }}<svg lucideChevronDown aria-hidden="true"></svg
+            ></span>
           </button>
           <mat-menu #viewMenu="matMenu">
             @for (option of viewOptions; track option.view) {
-              <button mat-menu-item (click)="setView(option.view)">
-                @if (isView(option.view)) {
-                  <svg lucideCheck aria-hidden="true"></svg>
-                }
+              <button
+                mat-menu-item
+                class="view-option"
+                [class.selected]="isView(option.view)"
+                (click)="setView(option.view)"
+              >
                 <span>{{ option.label }}</span>
               </button>
             }
           </mat-menu>
           <button
-            mat-icon-button
+            type="button"
+            class="icon-button"
             [class.active]="gpsOnly()"
             [attr.aria-pressed]="gpsOnly()"
             aria-label="Nur Funde mit Standort"
@@ -111,7 +121,8 @@
             <svg lucideMapPin aria-hidden="true"></svg>
           </button>
           <button
-            mat-stroked-button
+            type="button"
+            class="control-button"
             (click)="toggleSort()"
             [attr.aria-label]="'Sortierung: ' + sortLabel()"
           >
@@ -152,7 +163,6 @@
           >
           @if (sighting.type === 'hint') {
             <button
-              mat-icon-button
               class="delete-button"
               type="button"
               (click)="remove(sighting, $event)"

@@ -12,11 +12,9 @@ import { visibleNumberLimit } from '../services/game.service';
 import { Profile } from '../models/models';
 import { SupabaseService } from '../services/supabase.service';
 import { LucideCheck } from '@lucide/angular';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
 
 @Component({
-  imports: [RouterLink, LucideCheck, MatButtonModule, MatCardModule],
+  imports: [RouterLink, LucideCheck],
   templateUrl: './numbers.component.html',
   styleUrl: './numbers.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

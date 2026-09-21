@@ -1,10 +1,12 @@
 .group-actions {
-  margin-bottom: 14px;
-}
-
-.group-actions mat-card-content {
   display: grid;
-  gap: 8px;
+  gap: 12px;
+  margin: 16px 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 4px 16px #102a4312;
 }
 
 .group-actions p {
@@ -19,9 +21,19 @@
   margin: 18px 0;
 }
 
-.group-tab.selected {
+.group-tab {
+  padding: 11px 14px;
+  border: 0;
+  border-radius: 12px;
   background: #d9eaf7;
   color: var(--navy);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.group-tab.selected {
+  background: var(--navy);
+  color: #fff;
 }
 
 .member-list {
@@ -37,8 +49,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px;
-  border-radius: 12px;
+  padding: 12px;
+  border-radius: 14px;
   background: #fff;
 }
 

@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import {
   Component,
+  computed,
   ElementRef,
   OnDestroy,
   ViewChild,
@@ -10,7 +11,6 @@ import {
 } from '@angular/core';
 import { Map as MapLibreMap } from 'maplibre-gl';
 import { NgxMapLibreGLModule } from '@maplibre/ngx-maplibre-gl';
-import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -21,13 +21,7 @@ import { AuthService } from '../services/auth.service';
 import { Sighting } from '../models/models';
 import { SupabaseService } from '../services/supabase.service';
 import { environment } from '../../environments/environment';
-import {
-  LucideArrowDownUp,
-  LucideCheck,
-  LucideChevronDown,
-  LucideMapPin,
-  LucideTrash,
-} from '@lucide/angular';
+import { LucideArrowDownUp, LucideChevronDown, LucideMapPin, LucideTrash } from '@lucide/angular';
 
 type SightingStatus = 'confirmed' | 'fresh' | 'old' | 'stale';
 type SightingSort = 'number' | 'newest' | 'distance';
@@ -50,13 +44,11 @@ interface MapViewport {
   imports: [
     CommonModule,
     NgxMapLibreGLModule,
-    MatButtonModule,
     MatButtonToggleModule,
     MatMenuModule,
     MatTooltipModule,
     MatDialogModule,
     LucideArrowDownUp,
-    LucideCheck,
     LucideChevronDown,
     LucideMapPin,
     LucideTrash,
@@ -77,6 +69,9 @@ export class MapComponent implements OnDestroy {
   private readonly filterStorageKey = 'number-catch-map-filters-v2';
   readonly sightings = signal<Sighting[]>([]);
   readonly selectedSightingId = signal<string | null>(null);
+  readonly selectedSighting = computed(() =>
+    this.sightings().find((sighting) => sighting.id === this.selectedSightingId()),
+  );
   readonly view = signal<SightingView>('all');
   readonly gpsOnly = signal(false);
   readonly sortOrder = signal<SightingSort>('number');
@@ -142,7 +137,12 @@ export class MapComponent implements OnDestroy {
     this.selectedSightingId.set(sighting.id);
     this.mapElement?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
     if (sighting.latitude === null || sighting.longitude === null || !this.map) return;
-    this.map.flyTo({ center: [sighting.longitude, sighting.latitude], zoom: 14 });
+    this.map.flyTo({
+      center: [sighting.longitude, sighting.latitude],
+      zoom: 14,
+      duration: 1000,
+      essential: true,
+    });
   }
   selectFromMarker(sighting: Sighting): void {
     this.selectedSightingId.set(sighting.id);

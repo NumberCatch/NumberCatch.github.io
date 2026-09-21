@@ -4,23 +4,9 @@ import { ActivatedRoute } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { CaptureResult, GameService } from '../services/game.service';
 import { SupabaseService } from '../services/supabase.service';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
-import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 @Component({
-  imports: [
-    FormsModule,
-    MatButtonModule,
-    MatCardModule,
-    MatCheckboxModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatProgressSpinnerModule,
-  ],
+  imports: [FormsModule],
   templateUrl: './capture.component.html',
   styleUrl: './capture.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

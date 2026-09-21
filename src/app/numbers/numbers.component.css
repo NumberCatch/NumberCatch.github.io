@@ -51,7 +51,10 @@
   align-items: center;
   gap: 14px;
   padding: 10px 40px 10px 16px;
+  border: 1px solid var(--line);
   border-radius: 10px;
+  background: var(--surface);
+  font-weight: 700;
   color: #486581;
 }
 
@@ -84,15 +87,49 @@
 }
 
 .number-avatar {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 2px solid #fff;
+  border-radius: 50%;
   background: #d9eaf7;
   background-position: center;
   background-size: cover;
   color: var(--navy);
   font-size: 0.65rem;
+  font-weight: 800;
+}
+
+.number-avatar.own-avatar {
+  outline: 2px solid var(--orange);
+  outline-offset: 1px;
 }
 
 .player-name {
-  font-size: 0.8rem;
+  position: absolute;
+  z-index: 1;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  display: none;
+  padding: 6px 9px;
+  border-radius: 8px;
+  background: var(--navy);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.number-player {
+  position: relative;
+}
+
+.number-player:hover .player-name,
+.number-player:focus-within .player-name {
+  display: block;
 }
 
 .number-cell small {

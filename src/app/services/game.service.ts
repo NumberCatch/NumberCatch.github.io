@@ -4,7 +4,7 @@ export type CaptureResult = { kind: 'next' | 'hint' | 'done'; number: number; ne
 
 export function visibleNumberLimit(currentNumber: number, friendProgresses: number[]): number {
   const highestProgress = Math.max(0, currentNumber, ...friendProgresses);
-  return highestProgress + 20;
+  return highestProgress + 5;
 }
 
 export function classifyCapture(currentNumber: number, number: number): CaptureResult {

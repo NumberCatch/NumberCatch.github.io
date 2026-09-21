@@ -1,8 +1,6 @@
 import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../services/auth.service';
-import { MatButtonModule } from '@angular/material/button';
-import { MatToolbarModule } from '@angular/material/toolbar';
 import {
   LucideGrid3x3,
   LucideMap,
@@ -22,8 +20,6 @@ import {
     LucidePlus,
     LucideUserRound,
     LucideUsers,
-    MatButtonModule,
-    MatToolbarModule,
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css',

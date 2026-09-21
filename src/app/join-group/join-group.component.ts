@@ -2,10 +2,9 @@ import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@ang
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { SupabaseService } from '../services/supabase.service';
-import { MatButtonModule } from '@angular/material/button';
 
 @Component({
-  imports: [RouterLink, MatButtonModule],
+  imports: [RouterLink],
   templateUrl: './join-group.component.html',
   styleUrl: './join-group.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

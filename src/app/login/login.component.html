@@ -4,10 +4,9 @@
   <p class="muted">Finde die nächste Zahl. Gemeinsam.</p>
   <form (ngSubmit)="submit()">
     @if (registerMode()) {
-      <mat-form-field appearance="outline">
-        <mat-label>Anzeigename</mat-label>
+      <label>
+        Anzeigename
         <input
-          matInput
           type="text"
           name="name"
           [(ngModel)]="name"
@@ -15,16 +14,15 @@
           maxlength="80"
           autocomplete="name"
         />
-      </mat-form-field>
+      </label>
     }
-    <mat-form-field appearance="outline">
-      <mat-label>E-Mail</mat-label>
-      <input matInput type="email" name="email" [(ngModel)]="email" required autocomplete="email" />
-    </mat-form-field>
-    <mat-form-field appearance="outline">
-      <mat-label>Passwort</mat-label>
+    <label>
+      E-Mail
+      <input type="email" name="email" [(ngModel)]="email" required autocomplete="email" />
+    </label>
+    <label>
+      Passwort
       <input
-        matInput
         type="password"
         name="password"
         [(ngModel)]="password"
@@ -32,8 +30,8 @@
         minlength="8"
         autocomplete="new-password"
       />
-    </mat-form-field>
-    <button mat-raised-button color="primary" class="full" type="submit">
+    </label>
+    <button class="primary full" type="submit">
       {{ registerMode() ? 'Konto erstellen' : 'Einloggen' }}
     </button>
     @if (message()) {
@@ -43,7 +41,7 @@
       <p class="error">{{ error() }}</p>
     }
   </form>
-  <button mat-button type="button" (click)="toggleMode()">
+  <button class="text-button" type="button" (click)="toggleMode()">
     {{ registerMode() ? 'Schon registriert? Einloggen' : 'Noch kein Konto? Registrieren' }}
   </button>
 </section>

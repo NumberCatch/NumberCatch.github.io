@@ -11,11 +11,9 @@
     <p class="error">{{ error() }}</p>
   }
   @if (!joined() && !error()) {
-    <button mat-raised-button color="primary" class="full" (click)="join()">
-      Gruppe beitreten
-    </button>
+    <button class="primary full" (click)="join()">Gruppe beitreten</button>
   }
   @if (joined() || error()) {
-    <a mat-stroked-button routerLink="/friends" class="full">Zu Freunde</a>
+    <a routerLink="/friends" class="secondary full">Zu Freunde</a>
   }
 </section>

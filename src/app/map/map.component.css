@@ -1,7 +1,28 @@
 .sighting-actions {
   display: flex;
+  min-width: 0;
   align-items: center;
   gap: 8px;
+  overflow-x: auto;
+}
+
+.sighting-actions button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.sighting-actions button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.view-button-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .map {
@@ -23,17 +44,32 @@
   color: var(--muted);
 }
 
-.map-legend mat-button-toggle-group {
-  max-width: 100%;
-  flex-wrap: wrap;
+.legend-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  padding: 5px 8px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.8rem;
 }
 
-.map-legend i {
+.legend-option.active {
+  color: var(--navy);
+}
+
+.legend-option i {
   display: inline-block;
   width: 10px;
   height: 10px;
-  margin-right: 5px;
+  margin-right: 4px;
   border-radius: 50%;
+}
+
+.legend-option:not(.active) {
+  opacity: 0.35;
 }
 
 .fresh {
@@ -173,7 +209,11 @@
 }
 
 .delete-button {
+  padding: 8px;
+  border: 0;
+  background: transparent;
   color: #b42318;
+  cursor: pointer;
 }
 
 .delete-button svg {

@@ -5,22 +5,9 @@ import { AuthService } from '../services/auth.service';
 import { SupabaseService } from '../services/supabase.service';
 import { LucideLogOut } from '@lucide/angular';
 import packageJson from '../../../package.json';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 @Component({
-  imports: [
-    FormsModule,
-    LucideLogOut,
-    MatButtonModule,
-    MatCardModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatProgressSpinnerModule,
-  ],
+  imports: [FormsModule, LucideLogOut],
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

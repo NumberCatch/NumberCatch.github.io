@@ -1,26 +1,24 @@
 <section class="page">
   <p class="eyebrow">DEINE GRUPPE</p>
   <h1>Freunde</h1>
-  <mat-card class="group-actions"
-    ><mat-card-content>
-      <strong>Neue Gruppe erstellen</strong>
-      <p class="muted">Starte eine neue Runde mit deinen Freunden.</p>
-      <mat-form-field appearance="outline"
-        ><mat-label>Name der neuen Gruppe</mat-label><input matInput [(ngModel)]="groupName"
-      /></mat-form-field>
-      <button mat-raised-button color="primary" (click)="create()">Gruppe erstellen</button>
-    </mat-card-content></mat-card
-  >
-  <mat-card class="group-actions"
-    ><mat-card-content>
-      <strong>Gruppe beitreten</strong>
-      <p class="muted">Nutze die Gruppen-ID oder den kopierten Link.</p>
-      <mat-form-field appearance="outline"
-        ><mat-label>Gruppen-ID</mat-label><input matInput [(ngModel)]="groupId"
-      /></mat-form-field>
-      <button mat-stroked-button (click)="join()">Gruppe beitreten</button>
-    </mat-card-content></mat-card
-  >
+  <div class="group-actions">
+    <strong>Neue Gruppe erstellen</strong>
+    <p class="muted">Starte eine neue Runde mit deinen Freunden.</p>
+    <label>
+      Name der neuen Gruppe
+      <input [(ngModel)]="groupName" />
+    </label>
+    <button class="primary" (click)="create()">Gruppe erstellen</button>
+  </div>
+  <div class="group-actions">
+    <strong>Gruppe beitreten</strong>
+    <p class="muted">Nutze die Gruppen-ID oder den kopierten Link.</p>
+    <label>
+      Gruppen-ID
+      <input [(ngModel)]="groupId" />
+    </label>
+    <button class="secondary" (click)="join()">Gruppe beitreten</button>
+  </div>
   @if (error()) {
     <p class="error">{{ error() }}</p>
   }
@@ -28,7 +26,6 @@
     <div class="group-list" role="tablist">
       @for (group of groups(); track group.id) {
         <button
-          mat-button
           class="group-tab"
           [class.selected]="selected()?.id === group.id"
           (click)="select(group)"
@@ -38,21 +35,17 @@
       }
     </div>
   } @else {
-    <mat-card class="empty-state"
-      ><mat-card-content
-        ><svg class="empty-icon" lucideUsers></svg>
-        <h2>Noch keine Gruppe</h2>
-        <p class="muted">
-          Erstelle eine Gruppe oder tritt mit einer Gruppen-ID bei.
-        </p></mat-card-content
-      ></mat-card
-    >
+    <div class="empty-state">
+      <svg class="empty-icon" lucideUsers></svg>
+      <h2>Noch keine Gruppe</h2>
+      <p class="muted">Erstelle eine Gruppe oder tritt mit einer Gruppen-ID bei.</p>
+    </div>
   }
   @if (selected()) {
     <div class="invite-actions">
-      <button mat-stroked-button (click)="copyGroupLink()">Gruppenlink kopieren</button>
+      <button class="secondary" (click)="copyGroupLink()">Gruppenlink kopieren</button>
       @if (selected()?.created_by === auth.profile()?.id) {
-        <button mat-button color="warn" (click)="deleteSelected()">
+        <button type="button" class="danger-button" (click)="deleteSelected()">
           <svg lucideTrash></svg>Gruppe löschen
         </button>
       }

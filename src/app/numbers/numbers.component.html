@@ -1,12 +1,10 @@
 <section class="page">
-  <div class="page-heading numbers-heading"><p class="eyebrow">DEIN FORTSCHRITT</p></div>
-  <a
-    mat-raised-button
-    color="primary"
-    routerLink="/capture"
-    [queryParams]="{ number: next() }"
-    class="next-card"
-  >
+  <div class="page-heading numbers-heading">
+    <div>
+      <p class="eyebrow">DEIN FORTSCHRITT</p>
+    </div>
+  </div>
+  <a routerLink="/capture" [queryParams]="{ number: next() }" class="next-card">
     <span class="next-card-content">
       <span class="next-label">NÄCHSTE ZAHL</span><span class="next-number">{{ next() }}</span
       ><span>Jetzt erfassen</span>
@@ -18,7 +16,7 @@
   </div>
   <div class="number-grid">
     @for (number of numbers(); track number) {
-      <mat-card
+      <div
         class="number-cell"
         [class.completed]="number <= current()"
         [class.next-cell]="number === next()"
@@ -29,7 +27,6 @@
             @for (player of players; track player.id) {
               <span class="number-player">
                 <button
-                  mat-mini-fab
                   type="button"
                   class="number-avatar"
                   [class.own-avatar]="player.id === profile()?.id"
@@ -51,7 +48,7 @@
         @if (number <= current()) {
           <svg class="check" lucideCheck></svg>
         }
-      </mat-card>
+      </div>
     }
   </div>
 </section>

@@ -4,25 +4,12 @@ import { AuthService } from '../services/auth.service';
 import { GroupMember, PlayerGroup } from '../models/models';
 import { SupabaseService } from '../services/supabase.service';
 import { LucideTrash, LucideUsers } from '@lucide/angular';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { firstValueFrom } from 'rxjs';
 import { ConfirmDialog, ConfirmDialogData } from '../shared/confirm-dialog/confirm-dialog';
 
 @Component({
-  imports: [
-    FormsModule,
-    LucideTrash,
-    LucideUsers,
-    MatButtonModule,
-    MatCardModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatDialogModule,
-  ],
+  imports: [FormsModule, LucideTrash, LucideUsers, MatDialogModule],
   templateUrl: './friends.component.html',
   styleUrl: './friends.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
