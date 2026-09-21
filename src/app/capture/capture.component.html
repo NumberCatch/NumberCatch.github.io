@@ -17,6 +17,8 @@
         [disabled]="saving()"
         required
         inputmode="numeric"
+        enterkeyhint="done"
+        (keydown.enter)="submitFromNumberInput($event)"
       />
     </label>
     <label>

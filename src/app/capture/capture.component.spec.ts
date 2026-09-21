@@ -85,6 +85,21 @@ describe('CaptureComponent', () => {
     expect(fixture.nativeElement.querySelector('[role="alert"]')).toBeNull();
   });
 
+  it('submits instead of moving focus when Enter is pressed in the number input', async () => {
+    const input: HTMLInputElement = fixture.nativeElement.querySelector('input[name="number"]');
+    const event = new KeyboardEvent('keydown', {
+      key: 'Enter',
+      bubbles: true,
+      cancelable: true,
+    });
+
+    input.dispatchEvent(event);
+    await fixture.whenStable();
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(supabase.saveSighting).toHaveBeenCalledTimes(1);
+  });
+
   it('allows repeated future hints without increasing progress', async () => {
     supabase.saveSighting.mockResolvedValue(initialProfile);
     for (let attempt = 0; attempt < 2; attempt++) {

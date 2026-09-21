@@ -33,6 +33,10 @@ export class CaptureComponent implements OnInit {
   next(): number {
     return (this.auth.profile()?.current_number ?? 0) + 1;
   }
+  submitFromNumberInput(event: Event): void {
+    event.preventDefault();
+    void this.submit();
+  }
   async submit(): Promise<void> {
     if (this.number === null || !this.validNumber() || this.saving()) return;
     const number = this.number;
