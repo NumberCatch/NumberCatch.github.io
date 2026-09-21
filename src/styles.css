@@ -680,6 +680,10 @@ textarea {
   text-align: left;
   cursor: pointer;
 }
+.sighting-row.selected {
+  background: #f0f7ff;
+  box-shadow: inset 3px 0 var(--blue);
+}
 .sighting-number {
   display: grid;
   place-items: center;

@@ -8,7 +8,12 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import maplibregl, { GeolocateControl, Map as MapLibreMap, Marker } from 'maplibre-gl';
+import maplibregl, {
+  GeolocateControl,
+  Map as MapLibreMap,
+  Marker,
+  Popup,
+} from 'maplibre-gl';
 import { AuthService } from './auth.service';
 import { Sighting } from './models';
 import { SupabaseService } from './supabase.service';
@@ -59,10 +64,12 @@ interface MapViewport {
         }
         <div
           class="sighting-row"
+          [class.selected]="selectedSightingId() === sighting.id"
           *ngFor="let sighting of visibleSightings()"
           (click)="focus(sighting)"
           role="button"
           tabindex="0"
+          [attr.aria-pressed]="selectedSightingId() === sighting.id"
           (keydown.enter)="focus(sighting)"
         >
           <span class="sighting-number" [ngClass]="statusClass(sighting)">{{
@@ -110,8 +117,10 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   private readonly viewportStorageKey = 'number-catch-map-viewport';
   private map?: MapLibreMap;
   private geolocateControl?: GeolocateControl;
+  private activePopup?: Popup;
   private readonly markers = new Map<string, Marker>();
   readonly sightings = signal<Sighting[]>([]);
+  readonly selectedSightingId = signal<string | null>(null);
   readonly loadError = signal('');
   readonly statusOptions: ReadonlyArray<{ status: SightingStatus; label: string }> = [
     { status: 'confirmed', label: 'bestätigt' },
@@ -154,13 +163,21 @@ export class MapComponent implements AfterViewInit, OnDestroy {
         markerElement.className = 'number-marker';
         markerElement.textContent = String(sighting.number);
         markerElement.style.backgroundColor = this.color(sighting);
+        const popup = new maplibregl.Popup().setText(
+          `${sighting.number} · ${sighting.type === 'confirmed' ? 'Bestätigt' : this.ageLabel(sighting.created_at)}${sighting.note ? ` · ${sighting.note}` : ''}`,
+        );
+        markerElement.addEventListener('click', () => {
+          if (this.activePopup && this.activePopup !== popup) this.activePopup.remove();
+          this.selectedSightingId.set(sighting.id);
+        });
+        popup.on('open', () => (this.activePopup = popup));
+        popup.on('close', () => {
+          if (this.activePopup === popup) this.activePopup = undefined;
+          if (this.selectedSightingId() === sighting.id) this.selectedSightingId.set(null);
+        });
         const marker = new maplibregl.Marker({ element: markerElement, anchor: 'bottom' })
           .setLngLat([sighting.longitude, sighting.latitude])
-          .setPopup(
-            new maplibregl.Popup().setText(
-              `${sighting.number} · ${sighting.type === 'confirmed' ? 'Bestätigt' : this.ageLabel(sighting.created_at)}${sighting.note ? ` · ${sighting.note}` : ''}`,
-            ),
-          )
+          .setPopup(popup)
           .addTo(this.map!);
         this.markers.set(sighting.id, marker);
       }
@@ -172,10 +189,16 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     }
   }
   focus(sighting: Sighting): void {
+    this.selectedSightingId.set(sighting.id);
     if (sighting.latitude === null || sighting.longitude === null || !this.map) return;
     this.mapElement.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
     this.map.flyTo({ center: [sighting.longitude, sighting.latitude], zoom: 14 });
-    this.markers.get(sighting.id)?.togglePopup();
+    const marker = this.markers.get(sighting.id);
+    if (!marker) return;
+    const popup = marker.getPopup();
+    if (this.activePopup && this.activePopup !== popup) this.activePopup.remove();
+    this.activePopup = popup;
+    marker.togglePopup();
   }
   async remove(sighting: Sighting, event: Event): Promise<void> {
     event.stopPropagation();
@@ -184,6 +207,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     if (!userId) return;
     try {
       await this.supabase.deleteSighting(userId, sighting.id);
+      if (this.selectedSightingId() === sighting.id) this.selectedSightingId.set(null);
       this.markers.get(sighting.id)?.remove();
       this.markers.delete(sighting.id);
       this.sightings.update((items) => items.filter((item) => item.id !== sighting.id));
