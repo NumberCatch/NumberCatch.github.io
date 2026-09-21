@@ -19,6 +19,7 @@ jobs:
         with: { node-version: 22, cache: npm }
       - run: npm ci
       - run: npm run lint
+      - run: npm test -- --progress=false
       - run: npm run test:db
       - run: npm run build -- --base-href=/${{ github.event.repository.name }}/
       - uses: actions/upload-pages-artifact@v3

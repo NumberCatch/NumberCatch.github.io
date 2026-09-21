@@ -1,0 +1,54 @@
+<section class="page">
+  <div class="page-heading numbers-heading">
+    <div>
+      <p class="eyebrow">DEIN FORTSCHRITT</p>
+    </div>
+  </div>
+  <a routerLink="/capture" [queryParams]="{ number: next() }" class="next-card">
+    <span class="next-card-content">
+      <span class="next-label">NÄCHSTE ZAHL</span><span class="next-number">{{ next() }}</span
+      ><span>Jetzt erfassen</span>
+    </span>
+  </a>
+  <div class="section-title">
+    <h2>Zahlenübersicht</h2>
+    <span class="muted">1–{{ numberLimit() }}</span>
+  </div>
+  <div class="number-grid">
+    @for (number of numbers(); track number) {
+      <div
+        class="number-cell"
+        [class.completed]="number <= current()"
+        [class.next-cell]="number === next()"
+      >
+        <span class="number-label">{{ number }}</span>
+        @if (playersAt(number); as players) {
+          <div class="number-players">
+            @for (player of players; track player.id) {
+              <span class="number-player">
+                <button
+                  type="button"
+                  class="number-avatar"
+                  [class.own-avatar]="player.id === profile()?.id"
+                  [attr.aria-label]="player.display_name"
+                  [style.background-image]="
+                    player.avatar_url ? 'url(' + player.avatar_url + ')' : null
+                  "
+                >
+                  {{ player.avatar_url ? '' : initials(player.display_name) }}
+                </button>
+                <span class="player-name">{{ player.display_name }}</span>
+              </span>
+            }
+          </div>
+        }
+        @if (number === next()) {
+          <small>gesucht</small>
+        }
+        @if (number <= current()) {
+          <svg class="check" lucideCheck></svg>
+        }
+      </div>
+    }
+  </div>
+</section>

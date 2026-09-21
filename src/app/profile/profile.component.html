@@ -1,0 +1,35 @@
+<section class="page narrow">
+  <p class="eyebrow">DEIN KONTO</p>
+  <h1>Profil</h1>
+  <div class="profile-card">
+    <div
+      class="profile-avatar"
+      [style.background-image]="
+        auth.profile()?.avatar_url ? 'url(' + auth.profile()?.avatar_url + ')' : null
+      "
+    >
+      @if (uploading()) {
+        <span class="loading-spinner" aria-label="Avatar wird hochgeladen"></span>
+      }
+      @if (!uploading()) {
+        {{ auth.profile()?.avatar_url ? '' : initials() }}
+      }
+    </div>
+    <label class="upload-label" [class.disabled]="uploading()">
+      Avatar ändern
+      <input type="file" accept="image/*" [disabled]="uploading()" (change)="upload($event)" />
+    </label>
+    <label>
+      Anzeigename
+      <input [(ngModel)]="name" maxlength="80" />
+    </label>
+    <button class="primary full" (click)="save()">Profil speichern</button>
+    @if (message) {
+      <p class="muted">{{ message }}</p>
+    }
+  </div>
+  <button type="button" class="secondary full" (click)="logout()">
+    <svg lucideLogOut></svg>Ausloggen
+  </button>
+  <p class="app-version">Version {{ appVersion }}</p>
+</section>

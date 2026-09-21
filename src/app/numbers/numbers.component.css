@@ -1,0 +1,147 @@
+.next-card {
+  display: flex;
+  min-height: 180px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 22px;
+  background: var(--navy);
+  color: #fff;
+  text-decoration: none;
+  box-shadow: 0 10px 25px #102a4330;
+}
+
+.next-card-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 30px 0 12px;
+}
+
+.next-label {
+  color: #9fb3c8;
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+}
+
+.next-number {
+  color: #fff;
+  font-size: 5rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.number-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.number-cell {
+  position: relative;
+  display: flex;
+  min-height: 54px;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 40px 10px 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  font-weight: 700;
+  color: #486581;
+}
+
+.number-cell.completed {
+  background: #e6f6ee;
+  color: #1f7a50;
+}
+
+.number-cell.next-cell {
+  border: 2px solid var(--orange);
+  color: var(--orange);
+  transform: scale(1.02);
+}
+
+.number-label {
+  min-width: 42px;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.number-players {
+  display: flex;
+  gap: 8px;
+}
+
+.number-player {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.number-avatar {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #d9eaf7;
+  background-position: center;
+  background-size: cover;
+  color: var(--navy);
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+.number-avatar.own-avatar {
+  outline: 2px solid var(--orange);
+  outline-offset: 1px;
+}
+
+.player-name {
+  position: absolute;
+  z-index: 1;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  display: none;
+  padding: 6px 9px;
+  border-radius: 8px;
+  background: var(--navy);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.number-player {
+  position: relative;
+}
+
+.number-player:hover .player-name,
+.number-player:focus-within .player-name {
+  display: block;
+}
+
+.number-cell small {
+  margin-left: auto;
+  font-size: 0.7rem;
+}
+
+.check {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  width: 16px;
+  height: 16px;
+  transform: translateY(-50%);
+}

@@ -1,0 +1,29 @@
+.auth-page {
+  max-width: 420px;
+  margin: 10vh auto;
+  padding: 24px;
+  text-align: center;
+}
+
+.hero-mark {
+  display: grid;
+  place-items: center;
+  width: 74px;
+  height: 74px;
+  margin: auto;
+  border-radius: 12px;
+  background: var(--orange);
+  color: #fff;
+  font-size: 42px;
+  font-weight: 900;
+}
+
+.auth-page h1 {
+  margin: 15px 0 4px;
+  font-size: 2.3rem;
+}
+
+.auth-page form {
+  margin-top: 30px;
+  text-align: left;
+}

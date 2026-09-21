@@ -1,0 +1,39 @@
+.profile-card {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 4px 16px #102a4312;
+  text-align: center;
+  margin-top: 22px;
+  margin-bottom: 18px;
+}
+
+.profile-avatar {
+  display: grid;
+  place-items: center;
+  width: 82px;
+  height: 82px;
+  margin: auto;
+  border-radius: 50%;
+  background: #d9eaf7;
+  background-position: center;
+  background-size: cover;
+  color: var(--navy);
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.upload-label {
+  display: grid;
+  gap: 6px;
+  color: var(--blue);
+  cursor: pointer;
+  font-weight: 700;
+  text-align: center;
+}
+
+.upload-label input {
+  display: none;
+}

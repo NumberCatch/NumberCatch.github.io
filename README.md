@@ -42,7 +42,7 @@ npm run test:db
 npm run build
 ```
 
-Die Browser-Tests benötigen Chrome (z. B. das Docker-Image `trion/ng-cli-karma:22.0.5`). Die Datenbanktests führen die echten Migrationen mit PGlite in einer isolierten PostgreSQL-Testdatenbank aus. Supabase-eigene Auth-/Storage-Schemas sind dafür minimal nachgebildet; es wird keine Cloud-Datenbank angesprochen. Sie prüfen Transaktionen, Reihenfolge, Duplikatschutz und Rechte. PGlite simuliert keine parallelen Datenbankverbindungen.
+Die Frontend-Tests laufen mit Vitest und jsdom. Die Datenbanktests führen die echten Migrationen mit PGlite in einer isolierten PostgreSQL-Testdatenbank aus. Supabase-eigene Auth-/Storage-Schemas sind dafür minimal nachgebildet; es wird keine Cloud-Datenbank angesprochen. Sie prüfen Transaktionen, Reihenfolge, Duplikatschutz und Rechte. PGlite simuliert keine parallelen Datenbankverbindungen.
 
 ## GitHub Pages
 

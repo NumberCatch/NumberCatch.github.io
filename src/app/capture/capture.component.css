@@ -1,0 +1,19 @@
+.location-status {
+  padding: 12px;
+  border-radius: 10px;
+  background: #e6edf3;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.result-card {
+  margin-top: 22px;
+  padding: 20px;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 4px 16px #102a4312;
+}
+
+.result-card.good {
+  border: 2px solid #48a868;
+}

@@ -1,0 +1,35 @@
+<div class="app-shell">
+  <header class="topbar">
+    <a routerLink="/numbers" class="brand">
+      <span class="brand-content"><span class="brand-mark">№</span><span>NumberCatch</span></span>
+    </a>
+    <a
+      routerLink="/profile"
+      class="avatar-small"
+      [style.background-image]="
+        auth.profile()?.avatar_url ? 'url(' + auth.profile()?.avatar_url + ')' : null
+      "
+      [attr.aria-label]="'Profil von ' + (auth.profile()?.display_name ?? '')"
+    >
+      {{ auth.profile()?.avatar_url ? '' : initials() }}
+    </a>
+  </header>
+  <main><router-outlet /></main>
+  <nav class="bottom-nav" aria-label="Hauptnavigation">
+    <a routerLink="/numbers" routerLinkActive="active"
+      ><span class="nav-item-content"><svg lucideGrid3x3></svg><span>Zahlen</span></span></a
+    >
+    <a routerLink="/map" routerLinkActive="active"
+      ><span class="nav-item-content"><svg lucideMap></svg><span>Karte</span></span></a
+    >
+    <a routerLink="/capture" class="capture-link" aria-label="Erfassen"
+      ><svg lucidePlus></svg><span>Erfassen</span></a
+    >
+    <a routerLink="/friends" routerLinkActive="active"
+      ><span class="nav-item-content"><svg lucideUsers></svg><span>Freunde</span></span></a
+    >
+    <a routerLink="/profile" routerLinkActive="active"
+      ><span class="nav-item-content"><svg lucideUserRound></svg><span>Profil</span></span></a
+    >
+  </nav>
+</div>

@@ -1,0 +1,184 @@
+<section class="page">
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">PRIVATE KARTE</p>
+      <h1>Deine Funde</h1>
+    </div>
+  </div>
+  <mgl-map
+    #map
+    class="map"
+    [mapStyle]="mapStyle"
+    [center]="center()"
+    [zoom]="zoom()"
+    (mapLoad)="onMapLoad($event)"
+    (moveEnd)="onMoveEnd()"
+  >
+    <mgl-control mglNavigation position="top-right" [showCompass]="false" />
+    <mgl-control
+      mglGeolocate
+      position="top-right"
+      [positionOptions]="{ enableHighAccuracy: true }"
+      (geolocate)="onGeolocate($event)"
+    />
+    @for (sighting of visibleSightings(); track sighting.id) {
+      @if (sighting.latitude !== null && sighting.longitude !== null) {
+        <mgl-marker
+          [lngLat]="[sighting.longitude, sighting.latitude]"
+          anchor="bottom"
+        >
+          <div
+            class="number-marker"
+            [class.selected]="selectedSightingId() === sighting.id"
+            [style.background-color]="statusColor(sighting)"
+            (click)="$event.stopPropagation(); selectFromMarker(sighting)"
+          >
+            {{ sighting.number }}
+          </div>
+        </mgl-marker>
+      }
+    }
+    @if (selectedSighting(); as sighting) {
+      @if (sighting.latitude !== null && sighting.longitude !== null) {
+        <mgl-popup
+          [lngLat]="[sighting.longitude, sighting.latitude]"
+          anchor="bottom"
+          [offset]="[0, -42]"
+          [closeOnClick]="false"
+          (popupClose)="closePopup(sighting)"
+        >
+          <div class="map-popup-content">
+            <strong
+              >{{ sighting.number }} ·
+              {{
+                sighting.type === 'confirmed' ? 'Bestätigt' : ageLabel(sighting.created_at)
+              }}</strong
+            >
+            <small>{{ sighting.created_at | date: 'dd.MM.yyyy, HH:mm' }} Uhr</small>
+            @if (sighting.note) {
+              <span>{{ sighting.note }}</span>
+            }
+            <a
+              class="popup-route"
+              [href]="routeUrl(sighting)"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Route planen</a
+            >
+          </div>
+        </mgl-popup>
+      }
+    }
+  </mgl-map>
+  <div class="map-legend">
+    @for (option of statusOptions; track option.status) {
+      <button
+        type="button"
+        class="legend-option"
+        [class.active]="isStatusVisible(option.status)"
+        [attr.aria-pressed]="isStatusVisible(option.status)"
+        (click)="toggleStatus(option.status)"
+      >
+        <i [ngClass]="option.status"></i>{{ option.label }}
+      </button>
+    }
+  </div>
+  <p class="muted map-note">Nur du siehst die GPS-Standorte deiner eigenen Funde.</p>
+  @if (loadError()) {
+    <p class="error">{{ loadError() }}</p>
+  }
+  @if (sightings().length) {
+    <div class="sighting-list">
+      <div class="sighting-list-heading">
+        <h2>Funde</h2>
+        <div class="sighting-actions">
+          <button type="button" class="control-button" [matMenuTriggerFor]="viewMenu">
+            <span class="view-button-content"
+              >{{ viewLabel() }}<svg lucideChevronDown aria-hidden="true"></svg
+            ></span>
+          </button>
+          <mat-menu #viewMenu="matMenu">
+            @for (option of viewOptions; track option.view) {
+              <button
+                mat-menu-item
+                class="view-option"
+                [class.selected]="isView(option.view)"
+                (click)="setView(option.view)"
+              >
+                <span>{{ option.label }}</span>
+              </button>
+            }
+          </mat-menu>
+          <button
+            type="button"
+            class="icon-button"
+            [class.active]="gpsOnly()"
+            [attr.aria-pressed]="gpsOnly()"
+            aria-label="Nur Funde mit Standort"
+            matTooltip="Nur Funde mit Standort"
+            (click)="toggleGpsOnly()"
+          >
+            <svg lucideMapPin aria-hidden="true"></svg>
+          </button>
+          <button
+            type="button"
+            class="control-button"
+            (click)="toggleSort()"
+            [attr.aria-label]="'Sortierung: ' + sortLabel()"
+          >
+            <svg lucideArrowDownUp aria-hidden="true"></svg>
+            {{ sortLabel() }}
+          </button>
+        </div>
+      </div>
+      @if (!visibleSightings().length) {
+        <p class="muted">Keine Funde für diese Filter.</p>
+      }
+      @for (sighting of visibleSightings(); track sighting) {
+        <div
+          class="sighting-row"
+          [class.selected]="selectedSightingId() === sighting.id"
+          (click)="focus(sighting)"
+          role="button"
+          tabindex="0"
+          [attr.aria-pressed]="selectedSightingId() === sighting.id"
+          (keydown.enter)="focus(sighting)"
+        >
+          <span class="sighting-number" [ngClass]="statusClass(sighting)">{{
+            sighting.number
+          }}</span>
+          @if (sighting.latitude !== null && sighting.longitude !== null) {
+            <svg class="sighting-location" lucideMapPin aria-label="Standort vorhanden"></svg>
+          }
+          <span class="sighting-details"
+            ><strong>{{
+              sighting.type === 'confirmed' ? 'Bestätigt' : ageLabel(sighting.created_at)
+            }}</strong
+            ><small
+              >{{ sighting.created_at | date: 'dd.MM.yyyy, HH:mm' }} Uhr
+              @if (sighting.note) {
+                <span> · {{ sighting.note }}</span>
+              }
+            </small></span
+          >
+          @if (sighting.type === 'hint') {
+            <button
+              class="delete-button"
+              type="button"
+              (click)="remove(sighting, $event)"
+              aria-label="Vormerkung löschen"
+              matTooltip="Vormerkung löschen"
+            >
+              <svg lucideTrash></svg>
+            </button>
+          }
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="empty-state compact">
+      <h2>Noch keine Funde</h2>
+      <p class="muted">Spätere Zahlen kannst du beim Erfassen vormerken.</p>
+    </div>
+  }
+</section>

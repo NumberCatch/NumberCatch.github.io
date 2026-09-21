@@ -1,0 +1,73 @@
+@use '@angular/material' as mat;
+
+$number-catch-theme: mat.define-theme(
+  (
+    color: (
+      theme-type: light,
+      primary: mat.$blue-palette,
+      tertiary: mat.$orange-palette,
+    ),
+    typography: (
+      plain-family: 'Inter, system-ui, sans-serif',
+      brand-family: 'Inter, system-ui, sans-serif',
+      bold-weight: 800,
+    ),
+    density: (
+      scale: 0,
+    ),
+  )
+);
+
+html {
+  @include mat.all-component-themes($number-catch-theme);
+  @include mat.theme-overrides(
+    (
+      primary: #2f80ed,
+      on-primary: #ffffff,
+      surface: #ffffff,
+      surface-container: #ffffff,
+      surface-container-low: #ffffff,
+      surface-container-lowest: #ffffff,
+      surface-container-high: #ffffff,
+      surface-container-highest: #ffffff,
+      outline: #bcccdc,
+    )
+  );
+  @include mat.card-overrides(
+    (
+      elevated-container-shape: 18px,
+      filled-container-shape: 18px,
+      outlined-container-shape: 18px,
+      elevated-container-color: #ffffff,
+      filled-container-color: #ffffff,
+      outlined-container-color: #ffffff,
+    )
+  );
+  @include mat.button-overrides(
+    (
+      filled-container-shape: 12px,
+      outlined-container-shape: 12px,
+      text-container-shape: 12px,
+      tonal-container-shape: 12px,
+      filled-horizontal-padding: 18px,
+      outlined-horizontal-padding: 18px,
+    )
+  );
+  @include mat.form-field-overrides(
+    (
+      outlined-container-shape: 12px,
+      filled-container-shape: 12px,
+    )
+  );
+  @include mat.menu-overrides(
+    (
+      container-color: #ffffff,
+      container-shape: 12px,
+      item-label-text-color: #102a43,
+      item-icon-color: #2f80ed,
+      item-spacing: 8px,
+      item-leading-spacing: 12px,
+      item-trailing-spacing: 12px,
+    )
+  );
+}

@@ -1,0 +1,80 @@
+<section class="page">
+  <p class="eyebrow">DEINE GRUPPE</p>
+  <h1>Freunde</h1>
+  <div class="group-actions">
+    <strong>Neue Gruppe erstellen</strong>
+    <p class="muted">Starte eine neue Runde mit deinen Freunden.</p>
+    <label>
+      Name der neuen Gruppe
+      <input [(ngModel)]="groupName" />
+    </label>
+    <button class="primary" (click)="create()">Gruppe erstellen</button>
+  </div>
+  <div class="group-actions">
+    <strong>Gruppe beitreten</strong>
+    <p class="muted">Nutze die Gruppen-ID oder den kopierten Link.</p>
+    <label>
+      Gruppen-ID
+      <input [(ngModel)]="groupId" />
+    </label>
+    <button class="secondary" (click)="join()">Gruppe beitreten</button>
+  </div>
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+  @if (groups().length) {
+    <div class="group-list" role="tablist">
+      @for (group of groups(); track group.id) {
+        <button
+          class="group-tab"
+          [class.selected]="selected()?.id === group.id"
+          (click)="select(group)"
+        >
+          {{ group.name }}
+        </button>
+      }
+    </div>
+  } @else {
+    <div class="empty-state">
+      <svg class="empty-icon" lucideUsers></svg>
+      <h2>Noch keine Gruppe</h2>
+      <p class="muted">Erstelle eine Gruppe oder tritt mit einer Gruppen-ID bei.</p>
+    </div>
+  }
+  @if (selected()) {
+    <div class="invite-actions">
+      <button class="secondary" (click)="copyGroupLink()">Gruppenlink kopieren</button>
+      @if (selected()?.created_by === auth.profile()?.id) {
+        <button type="button" class="danger-button" (click)="deleteSelected()">
+          <svg lucideTrash></svg>Gruppe löschen
+        </button>
+      }
+    </div>
+  }
+  @if (inviteMessage()) {
+    <p class="success">{{ inviteMessage() }}</p>
+  }
+  @if (selected()) {
+    <div class="member-list">
+      <p class="muted group-summary">
+        {{ members().length }} {{ members().length === 1 ? 'Mitglied' : 'Mitglieder' }}
+      </p>
+      @for (member of members(); track member.user_id) {
+        <div class="member-row">
+          <div
+            class="avatar"
+            [style.background-image]="
+              member.profile.avatar_url ? 'url(' + member.profile.avatar_url + ')' : null
+            "
+          >
+            {{ member.profile.avatar_url ? '' : initials(member.profile.display_name) }}
+          </div>
+          <div>
+            <strong>{{ member.profile.display_name }}</strong
+            ><small class="muted">{{ member.profile.current_number }} abgeschlossen</small>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</section>
