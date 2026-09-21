@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { AuthService } from './auth.service';
 import { SupabaseService } from './supabase.service';
 import { LucideLogOut } from '@lucide/angular';
+import packageJson from '../../package.json';
 
 @Component({
   standalone: true,
@@ -38,10 +39,12 @@ import { LucideLogOut } from '@lucide/angular';
       }
     </div>
     <button class="secondary full" (click)="logout()"><svg lucideLogOut></svg>Ausloggen</button>
+    <p class="app-version">Version {{ appVersion }}</p>
   </section>`,
 })
 export class ProfileComponent {
   readonly auth = inject(AuthService);
+  readonly appVersion = packageJson.version;
   private readonly router = inject(Router);
   private readonly supabase = inject(SupabaseService);
   readonly uploading = signal(false);

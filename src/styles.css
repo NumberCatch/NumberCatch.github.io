@@ -321,6 +321,12 @@ textarea {
 .full {
   width: 100%;
 }
+.app-version {
+  margin: 28px 0 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-align: center;
+}
 .result-card,
 .profile-card {
   background: #fff;
