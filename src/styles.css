@@ -472,6 +472,23 @@ textarea {
 .map-note {
   font-size: 0.85rem;
 }
+.map-popup-content {
+  display: grid;
+  gap: 5px;
+}
+.map-popup-content small {
+  color: var(--muted);
+}
+.popup-route {
+  display: inline-block;
+  margin-top: 5px;
+  color: var(--blue);
+  font-weight: 700;
+  text-decoration: none;
+}
+.popup-route:hover {
+  text-decoration: underline;
+}
 .empty-state {
   text-align: center;
   background: #fff;

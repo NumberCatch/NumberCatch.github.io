@@ -163,8 +163,8 @@ export class MapComponent implements AfterViewInit, OnDestroy {
         markerElement.className = 'number-marker';
         markerElement.textContent = String(sighting.number);
         markerElement.style.backgroundColor = this.color(sighting);
-        const popup = new maplibregl.Popup().setText(
-          `${sighting.number} · ${sighting.type === 'confirmed' ? 'Bestätigt' : this.ageLabel(sighting.created_at)}${sighting.note ? ` · ${sighting.note}` : ''}`,
+        const popup = new maplibregl.Popup({ anchor: 'bottom', offset: [0, -42] }).setDOMContent(
+          this.popupContent(sighting),
         );
         markerElement.addEventListener('click', () => {
           if (this.activePopup && this.activePopup !== popup) this.activePopup.remove();
@@ -313,5 +313,36 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     if (sighting.type === 'confirmed') return '#48a868';
     const days = (Date.now() - Date.parse(sighting.created_at)) / 86400000;
     return days <= 7 ? '#ef8354' : days <= 30 ? '#f2c14e' : '#829ab1';
+  }
+  private popupContent(sighting: Sighting): HTMLDivElement {
+    const content = document.createElement('div');
+    content.className = 'map-popup-content';
+
+    const title = document.createElement('strong');
+    title.textContent = `${sighting.number} · ${sighting.type === 'confirmed' ? 'Bestätigt' : this.ageLabel(sighting.created_at)}`;
+    content.append(title);
+
+    const time = document.createElement('small');
+    time.textContent = new Intl.DateTimeFormat('de-DE', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+    }).format(new Date(sighting.created_at));
+    content.append(time);
+
+    if (sighting.note) {
+      const note = document.createElement('span');
+      note.textContent = sighting.note;
+      content.append(note);
+    }
+
+    const route = document.createElement('a');
+    route.className = 'popup-route';
+    route.href = `https://www.google.com/maps/dir/?api=1&destination=${sighting.latitude},${sighting.longitude}`;
+    route.target = '_blank';
+    route.rel = 'noopener noreferrer';
+    route.textContent = 'Route planen';
+    content.append(route);
+
+    return content;
   }
 }
