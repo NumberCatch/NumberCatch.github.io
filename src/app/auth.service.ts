@@ -36,6 +36,7 @@ export class AuthService {
   }
   async signOut(): Promise<void> {
     await this.supabase.client.auth.signOut();
+    this.supabase.clearCache();
     this.authenticated.set(false);
     this.profile.set(null);
   }

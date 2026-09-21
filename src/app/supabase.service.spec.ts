@@ -1,4 +1,4 @@
-import { NewSighting, Profile } from './models';
+import { NewSighting, Profile, Sighting } from './models';
 import { SupabaseService } from './supabase.service';
 
 describe('SupabaseService persistence', () => {
@@ -35,6 +35,9 @@ describe('SupabaseService persistence', () => {
     upload = jasmine.createSpy('upload').and.resolveTo({ error: null });
     // Supply a local client stub without starting a real Supabase auth session.
     service = Object.create(SupabaseService.prototype) as SupabaseService;
+    Object.defineProperty(service, 'sightingsCache', { value: new Map() });
+    Object.defineProperty(service, 'groupsCache', { value: new Map() });
+    Object.defineProperty(service, 'membersCache', { value: new Map() });
     Object.defineProperty(service, 'client', {
       value: {
         from,
@@ -88,5 +91,37 @@ describe('SupabaseService persistence', () => {
     const url = await service.uploadAvatar('player', new File(['image'], 'avatar.png'));
     expect(url).toMatch(/^https:\/\/example\.test\/avatar\.png\?v=\d+$/);
     expect(single).toHaveBeenCalledTimes(1);
+  });
+
+  it('caches own sightings during the current session', async () => {
+    const sightings: Sighting[] = [
+      {
+        id: 'sighting',
+        user_id: 'player',
+        number: 1,
+        type: 'confirmed',
+        latitude: null,
+        longitude: null,
+        accuracy: null,
+        note: null,
+        created_at: '2026-09-21T08:00:00.000Z',
+      },
+    ];
+    const query = jasmine.createSpyObj('query', ['select', 'eq', 'order']);
+    query.select.and.returnValue(query);
+    query.eq.and.returnValue(query);
+    query.order.and.resolveTo({ data: sightings, error: null });
+    const cachedService = Object.create(SupabaseService.prototype) as SupabaseService;
+    Object.defineProperty(cachedService, 'sightingsCache', { value: new Map() });
+    Object.defineProperty(cachedService, 'groupsCache', { value: new Map() });
+    Object.defineProperty(cachedService, 'membersCache', { value: new Map() });
+    const fromSpy = jasmine.createSpy('from').and.returnValue(query);
+    Object.defineProperty(cachedService, 'client', { value: { from: fromSpy } });
+
+    await cachedService.ownSightings('player');
+    const result = await cachedService.ownSightings('player');
+
+    expect(result).toEqual(sightings);
+    expect(fromSpy).toHaveBeenCalledOnceWith('sightings');
   });
 });

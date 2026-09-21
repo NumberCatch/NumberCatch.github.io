@@ -193,7 +193,7 @@ export class FriendsComponent implements OnInit {
     }
   }
   private async refreshMembers(groupId: string): Promise<void> {
-    this.members.set(await this.supabase.members(groupId));
+    this.members.set(await this.supabase.members(groupId, true));
   }
   initials(name: string): string {
     return name.slice(0, 2).toUpperCase();
