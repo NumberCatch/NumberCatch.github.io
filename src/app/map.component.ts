@@ -1,6 +1,14 @@
 import { CommonModule } from '@angular/common';
-import { AfterViewInit, Component, ElementRef, ViewChild, inject, signal } from '@angular/core';
-import maplibregl, { Map as MapLibreMap, Marker } from 'maplibre-gl';
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  OnDestroy,
+  ViewChild,
+  inject,
+  signal,
+} from '@angular/core';
+import maplibregl, { GeolocateControl, Map as MapLibreMap, Marker } from 'maplibre-gl';
 import { AuthService } from './auth.service';
 import { Sighting } from './models';
 import { SupabaseService } from './supabase.service';
@@ -8,6 +16,12 @@ import { environment } from '../environments/environment';
 import { LucideMapPin, LucideTrash } from '@lucide/angular';
 
 type SightingStatus = 'confirmed' | 'fresh' | 'old' | 'stale';
+type MapCenter = [number, number];
+
+interface MapViewport {
+  center: MapCenter;
+  zoom: number;
+}
 
 @Component({
   standalone: true,
@@ -89,11 +103,13 @@ type SightingStatus = 'confirmed' | 'fresh' | 'old' | 'stale';
     }
   </section>`,
 })
-export class MapComponent implements AfterViewInit {
+export class MapComponent implements AfterViewInit, OnDestroy {
   @ViewChild('map', { static: true }) mapElement!: ElementRef<HTMLDivElement>;
   private readonly supabase = inject(SupabaseService);
   private readonly auth = inject(AuthService);
+  private readonly viewportStorageKey = 'number-catch-map-viewport';
   private map?: MapLibreMap;
+  private geolocateControl?: GeolocateControl;
   private readonly markers = new Map<string, Marker>();
   readonly sightings = signal<Sighting[]>([]);
   readonly loadError = signal('');
@@ -107,13 +123,24 @@ export class MapComponent implements AfterViewInit {
     new Set(this.statusOptions.map((option) => option.status)),
   );
   ngAfterViewInit(): void {
+    const viewport = this.loadViewport();
     this.map = new maplibregl.Map({
       container: this.mapElement.nativeElement,
       style: environment.mapStyleUrl,
-      center: [10.45, 51.16],
-      zoom: 5,
+      center: viewport.center,
+      zoom: viewport.zoom,
     });
+    this.geolocateControl = new maplibregl.GeolocateControl({
+      positionOptions: { enableHighAccuracy: true },
+      trackUserLocation: false,
+    });
+    this.map.addControl(this.geolocateControl, 'top-right');
+    this.map.on('moveend', () => this.saveViewport());
+    this.map.once('load', () => this.showAvailableLocation());
     void this.load();
+  }
+  ngOnDestroy(): void {
+    this.map?.remove();
   }
   private async load(): Promise<void> {
     const userId = this.auth.profile()?.id;
@@ -203,6 +230,60 @@ export class MapComponent implements AfterViewInit {
           : 'none';
       }
     }
+  }
+  private loadViewport(): MapViewport {
+    const defaultViewport: MapViewport = { center: [10.45, 51.16], zoom: 5 };
+    try {
+      const stored = window.localStorage.getItem(this.viewportStorageKey);
+      if (!stored) return defaultViewport;
+      const value: unknown = JSON.parse(stored);
+      if (!this.isMapViewport(value)) return defaultViewport;
+      return value;
+    } catch {
+      return defaultViewport;
+    }
+  }
+  private saveViewport(): void {
+    if (!this.map) return;
+    const center = this.map.getCenter();
+    const viewport: MapViewport = {
+      center: [center.lng, center.lat],
+      zoom: this.map.getZoom(),
+    };
+    try {
+      window.localStorage.setItem(this.viewportStorageKey, JSON.stringify(viewport));
+    } catch {
+      // Local storage may be unavailable in private browsing mode.
+    }
+  }
+  private isMapViewport(value: unknown): value is MapViewport {
+    if (!value || typeof value !== 'object') return false;
+    const viewport = value as Partial<MapViewport>;
+    return (
+      Array.isArray(viewport.center) &&
+      viewport.center.length === 2 &&
+      typeof viewport.center[0] === 'number' &&
+      Number.isFinite(viewport.center[0]) &&
+      viewport.center[0] >= -180 &&
+      viewport.center[0] <= 180 &&
+      typeof viewport.center[1] === 'number' &&
+      Number.isFinite(viewport.center[1]) &&
+      viewport.center[1] >= -90 &&
+      viewport.center[1] <= 90 &&
+      typeof viewport.zoom === 'number' &&
+      Number.isFinite(viewport.zoom) &&
+      viewport.zoom >= 0 &&
+      viewport.zoom <= 24
+    );
+  }
+  private showAvailableLocation(): void {
+    if (!navigator.geolocation || !this.geolocateControl) return;
+    navigator.permissions
+      ?.query({ name: 'geolocation' })
+      .then((permission) => {
+        if (permission.state === 'granted') this.geolocateControl?.trigger();
+      })
+      .catch(() => undefined);
   }
   private color(sighting: Sighting): string {
     if (sighting.type === 'confirmed') return '#48a868';
