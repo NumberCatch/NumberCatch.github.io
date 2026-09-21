@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { AuthService } from './auth.service';
 import { SupabaseService } from './supabase.service';
 import { LucideLogOut } from '@lucide/angular';
@@ -41,6 +42,7 @@ import { LucideLogOut } from '@lucide/angular';
 })
 export class ProfileComponent {
   readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
   private readonly supabase = inject(SupabaseService);
   readonly uploading = signal(false);
   name = '';
@@ -123,5 +125,6 @@ export class ProfileComponent {
   }
   async logout(): Promise<void> {
     await this.auth.signOut();
+    await this.router.navigateByUrl('/numbers');
   }
 }
