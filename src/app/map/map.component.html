@@ -1,0 +1,174 @@
+<section class="page">
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">PRIVATE KARTE</p>
+      <h1>Deine Funde</h1>
+    </div>
+  </div>
+  <mgl-map
+    #map
+    class="map"
+    [mapStyle]="mapStyle"
+    [center]="center()"
+    [zoom]="zoom()"
+    (mapLoad)="onMapLoad($event)"
+    (moveEnd)="onMoveEnd()"
+  >
+    <mgl-control mglNavigation position="top-right" [showCompass]="false" />
+    <mgl-control
+      mglGeolocate
+      position="top-right"
+      [positionOptions]="{ enableHighAccuracy: true }"
+      (geolocate)="onGeolocate($event)"
+    />
+    @for (sighting of visibleSightings(); track sighting.id) {
+      @if (sighting.latitude !== null && sighting.longitude !== null) {
+        <mgl-marker
+          [lngLat]="[sighting.longitude, sighting.latitude]"
+          anchor="bottom"
+          [popupShown]="selectedSightingId() === sighting.id"
+        >
+          <div
+            class="number-marker"
+            [class.selected]="selectedSightingId() === sighting.id"
+            [style.background-color]="statusColor(sighting)"
+            (click)="selectFromMarker(sighting)"
+          >
+            {{ sighting.number }}
+          </div>
+          <mgl-popup
+            anchor="bottom"
+            [offset]="0"
+            [closeOnClick]="false"
+            (popupClose)="closePopup(sighting)"
+          >
+            <div class="map-popup-content">
+              <strong
+                >{{ sighting.number }} ·
+                {{
+                  sighting.type === 'confirmed' ? 'Bestätigt' : ageLabel(sighting.created_at)
+                }}</strong
+              >
+              <small>{{ sighting.created_at | date: 'dd.MM.yyyy, HH:mm' }} Uhr</small>
+              @if (sighting.note) {
+                <span>{{ sighting.note }}</span>
+              }
+              <a
+                class="popup-route"
+                [href]="routeUrl(sighting)"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Route planen</a
+              >
+            </div>
+          </mgl-popup>
+        </mgl-marker>
+      }
+    }
+  </mgl-map>
+  <div class="map-legend">
+    <mat-button-toggle-group multiple aria-label="Status filtern">
+      @for (option of statusOptions; track option) {
+        <mat-button-toggle
+          [checked]="isStatusVisible(option.status)"
+          (change)="toggleStatus(option.status)"
+        >
+          <i [ngClass]="option.status"></i>{{ option.label }}
+        </mat-button-toggle>
+      }
+    </mat-button-toggle-group>
+  </div>
+  <p class="muted map-note">Nur du siehst die GPS-Standorte deiner eigenen Funde.</p>
+  @if (loadError()) {
+    <p class="error">{{ loadError() }}</p>
+  }
+  @if (sightings().length) {
+    <div class="sighting-list">
+      <div class="sighting-list-heading">
+        <h2>Funde</h2>
+        <div class="sighting-actions">
+          <button mat-stroked-button [matMenuTriggerFor]="viewMenu">
+            {{ viewLabel() }}<svg lucideChevronDown aria-hidden="true"></svg>
+          </button>
+          <mat-menu #viewMenu="matMenu">
+            @for (option of viewOptions; track option.view) {
+              <button mat-menu-item (click)="setView(option.view)">
+                @if (isView(option.view)) {
+                  <svg lucideCheck aria-hidden="true"></svg>
+                }
+                <span>{{ option.label }}</span>
+              </button>
+            }
+          </mat-menu>
+          <button
+            mat-icon-button
+            [class.active]="gpsOnly()"
+            [attr.aria-pressed]="gpsOnly()"
+            aria-label="Nur Funde mit Standort"
+            matTooltip="Nur Funde mit Standort"
+            (click)="toggleGpsOnly()"
+          >
+            <svg lucideMapPin aria-hidden="true"></svg>
+          </button>
+          <button
+            mat-stroked-button
+            (click)="toggleSort()"
+            [attr.aria-label]="'Sortierung: ' + sortLabel()"
+          >
+            <svg lucideArrowDownUp aria-hidden="true"></svg>
+            {{ sortLabel() }}
+          </button>
+        </div>
+      </div>
+      @if (!visibleSightings().length) {
+        <p class="muted">Keine Funde für diese Filter.</p>
+      }
+      @for (sighting of visibleSightings(); track sighting) {
+        <div
+          class="sighting-row"
+          [class.selected]="selectedSightingId() === sighting.id"
+          (click)="focus(sighting)"
+          role="button"
+          tabindex="0"
+          [attr.aria-pressed]="selectedSightingId() === sighting.id"
+          (keydown.enter)="focus(sighting)"
+        >
+          <span class="sighting-number" [ngClass]="statusClass(sighting)">{{
+            sighting.number
+          }}</span>
+          @if (sighting.latitude !== null && sighting.longitude !== null) {
+            <svg class="sighting-location" lucideMapPin aria-label="Standort vorhanden"></svg>
+          }
+          <span class="sighting-details"
+            ><strong>{{
+              sighting.type === 'confirmed' ? 'Bestätigt' : ageLabel(sighting.created_at)
+            }}</strong
+            ><small
+              >{{ sighting.created_at | date: 'dd.MM.yyyy, HH:mm' }} Uhr
+              @if (sighting.note) {
+                <span> · {{ sighting.note }}</span>
+              }
+            </small></span
+          >
+          @if (sighting.type === 'hint') {
+            <button
+              mat-icon-button
+              class="delete-button"
+              type="button"
+              (click)="remove(sighting, $event)"
+              aria-label="Vormerkung löschen"
+              matTooltip="Vormerkung löschen"
+            >
+              <svg lucideTrash></svg>
+            </button>
+          }
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="empty-state compact">
+      <h2>Noch keine Funde</h2>
+      <p class="muted">Spätere Zahlen kannst du beim Erfassen vormerken.</p>
+    </div>
+  }
+</section>

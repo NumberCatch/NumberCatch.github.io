@@ -1,0 +1,49 @@
+<section class="auth-page">
+  <div class="hero-mark">№</div>
+  <h1>NumberCatch</h1>
+  <p class="muted">Finde die nächste Zahl. Gemeinsam.</p>
+  <form (ngSubmit)="submit()">
+    @if (registerMode()) {
+      <mat-form-field appearance="outline">
+        <mat-label>Anzeigename</mat-label>
+        <input
+          matInput
+          type="text"
+          name="name"
+          [(ngModel)]="name"
+          required
+          maxlength="80"
+          autocomplete="name"
+        />
+      </mat-form-field>
+    }
+    <mat-form-field appearance="outline">
+      <mat-label>E-Mail</mat-label>
+      <input matInput type="email" name="email" [(ngModel)]="email" required autocomplete="email" />
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Passwort</mat-label>
+      <input
+        matInput
+        type="password"
+        name="password"
+        [(ngModel)]="password"
+        required
+        minlength="8"
+        autocomplete="new-password"
+      />
+    </mat-form-field>
+    <button mat-raised-button color="primary" class="full" type="submit">
+      {{ registerMode() ? 'Konto erstellen' : 'Einloggen' }}
+    </button>
+    @if (message()) {
+      <p class="success">{{ message() }}</p>
+    }
+    @if (error()) {
+      <p class="error">{{ error() }}</p>
+    }
+  </form>
+  <button mat-button type="button" (click)="toggleMode()">
+    {{ registerMode() ? 'Schon registriert? Einloggen' : 'Noch kein Konto? Registrieren' }}
+  </button>
+</section>

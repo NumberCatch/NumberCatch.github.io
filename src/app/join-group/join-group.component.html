@@ -1,0 +1,21 @@
+<section class="page narrow">
+  <p class="eyebrow">GRUPPENEINLADUNG</p>
+  <h1>Gruppe beitreten</h1>
+  @if (!error() && !joined()) {
+    <p class="muted">Du wurdest zu einer NumberCatch-Gruppe eingeladen.</p>
+  }
+  @if (joined()) {
+    <p class="success">Du bist der Gruppe beigetreten.</p>
+  }
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+  @if (!joined() && !error()) {
+    <button mat-raised-button color="primary" class="full" (click)="join()">
+      Gruppe beitreten
+    </button>
+  }
+  @if (joined() || error()) {
+    <a mat-stroked-button routerLink="/friends" class="full">Zu Freunde</a>
+  }
+</section>

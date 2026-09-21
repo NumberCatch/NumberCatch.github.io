@@ -1,81 +1,29 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { AuthService } from './auth.service';
-import { CaptureResult, GameService } from './game.service';
-import { SupabaseService } from './supabase.service';
+import { AuthService } from '../services/auth.service';
+import { CaptureResult, GameService } from '../services/game.service';
+import { SupabaseService } from '../services/supabase.service';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 @Component({
-  standalone: true,
-  imports: [FormsModule],
-  template: ` <section class="page narrow">
-    <p class="eyebrow">NEUER FUND</p>
-    <h1>Kennzeichen erfassen</h1>
-    <p class="muted">
-      Deine nächste Zahl ist <strong>{{ next() }}</strong
-      >.
-    </p>
-    <form (ngSubmit)="submit()">
-      <div class="big-label">
-        Welche Zahl hast du gesehen?<input
-          class="number-input"
-          type="number"
-          min="1"
-          name="number"
-          [(ngModel)]="number"
-          [disabled]="saving()"
-          required
-          inputmode="numeric"
-        />
-      </div>
-      <label
-        >Notiz (optional)<textarea
-          name="note"
-          [(ngModel)]="note"
-          rows="2"
-          maxlength="500"
-          [disabled]="saving()"
-          placeholder="z. B. Parkplatz am Bahnhof"
-        ></textarea>
-      </label>
-      <label class="location-toggle">
-        <input
-          type="checkbox"
-          name="saveLocation"
-          [(ngModel)]="saveLocation"
-          (ngModelChange)="locationPreferenceChanged()"
-          [disabled]="saving()"
-        />
-        <span>Standort speichern</span>
-      </label>
-      <div class="location-status" role="status">{{ locationStatus() }}</div>
-      <button
-        class="primary full"
-        type="submit"
-        [disabled]="saving() || !validNumber()"
-        [attr.aria-busy]="saving()"
-      >
-        @if (saving()) {
-          <span class="loading-spinner" aria-hidden="true"></span>
-        }
-        {{ saving() ? 'Wird gespeichert…' : buttonLabel() }}
-      </button>
-    </form>
-    @if (saveError()) {
-      <p class="error" role="alert">{{ saveError() }}</p>
-    }
-    @if (saveMessage()) {
-      <div class="result-card good">
-        <h2>{{ saveMessage() }}</h2>
-      </div>
-    }
-    @if (result(); as found) {
-      <div class="result-card">
-        <h2>{{ message(found) }}</h2>
-        <p>{{ description(found) }}</p>
-      </div>
-    }
-  </section>`,
+  imports: [
+    FormsModule,
+    MatButtonModule,
+    MatCardModule,
+    MatCheckboxModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatProgressSpinnerModule,
+  ],
+  templateUrl: './capture.component.html',
+  styleUrl: './capture.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CaptureComponent implements OnInit {
   private readonly game = inject(GameService);

@@ -1,30 +1,14 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { AuthService } from './auth.service';
-import { SupabaseService } from './supabase.service';
+import { AuthService } from '../services/auth.service';
+import { SupabaseService } from '../services/supabase.service';
+import { MatButtonModule } from '@angular/material/button';
 
 @Component({
-  standalone: true,
-  imports: [RouterLink],
-  template: `<section class="page narrow">
-    <p class="eyebrow">GRUPPENEINLADUNG</p>
-    <h1>Gruppe beitreten</h1>
-    @if (!error() && !joined()) {
-      <p class="muted">Du wurdest zu einer NumberCatch-Gruppe eingeladen.</p>
-    }
-    @if (joined()) {
-      <p class="success">Du bist der Gruppe beigetreten.</p>
-    }
-    @if (error()) {
-      <p class="error">{{ error() }}</p>
-    }
-    @if (!joined() && !error()) {
-      <button class="primary full" (click)="join()">Gruppe beitreten</button>
-    }
-    @if (joined() || error()) {
-      <a routerLink="/friends" class="secondary full link-button">Zu Freunde</a>
-    }
-  </section>`,
+  imports: [RouterLink, MatButtonModule],
+  templateUrl: './join-group.component.html',
+  styleUrl: './join-group.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class JoinGroupComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);

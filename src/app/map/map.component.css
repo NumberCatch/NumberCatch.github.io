@@ -1,0 +1,194 @@
+.sighting-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.map {
+  display: block;
+  height: clamp(280px, 42vh, 420px);
+  min-height: 280px;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #d9eaf7;
+}
+
+.map-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.map-legend mat-button-toggle-group {
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+
+.map-legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 5px;
+  border-radius: 50%;
+}
+
+.fresh {
+  background: #ef8354;
+}
+
+.old {
+  background: #f2c14e;
+}
+
+.stale {
+  background: #829ab1;
+}
+
+.confirmed {
+  background: #48a868;
+}
+
+.number-marker {
+  display: grid;
+  place-items: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 8px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 900;
+  box-shadow: 0 2px 6px #102a4366;
+  cursor: pointer;
+}
+
+.number-marker.selected {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.map-note {
+  font-size: 0.85rem;
+}
+
+.map-popup-content {
+  display: grid;
+  gap: 5px;
+}
+
+.map-popup-content small {
+  color: var(--muted);
+}
+
+.popup-route {
+  display: inline-block;
+  margin-top: 5px;
+  color: var(--blue);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.popup-route:hover {
+  text-decoration: underline;
+}
+
+.sighting-list {
+  margin-top: 28px;
+}
+
+.sighting-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 8px;
+  border: 0;
+  border-bottom: 1px solid #e6edf3;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sighting-row.selected {
+  background: #f0f7ff;
+  box-shadow: inset 3px 0 var(--blue);
+}
+
+.sighting-number {
+  display: grid;
+  flex: 0 0 42px;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #e6edf3;
+  color: var(--navy);
+  font-weight: 900;
+}
+
+.sighting-number.confirmed {
+  background: #e6f6ee;
+  color: #1f7a50;
+}
+
+.sighting-number.fresh {
+  background: #fff0eb;
+  color: #c75a32;
+}
+
+.sighting-number.old {
+  background: #fff8df;
+  color: #9a7412;
+}
+
+.sighting-number.stale {
+  background: #e6edf3;
+  color: #486581;
+}
+
+.sighting-location {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  color: var(--blue);
+}
+
+.sighting-details {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 3px;
+}
+
+.sighting-details small {
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.delete-button {
+  color: #b42318;
+}
+
+.delete-button svg {
+  width: 19px;
+  height: 19px;
+}
+
+.sighting-list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.sighting-list h2 {
+  margin: 0;
+}

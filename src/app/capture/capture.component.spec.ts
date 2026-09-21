@@ -1,15 +1,16 @@
+import type { MockedObject } from 'vitest';
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
-import { AuthService } from './auth.service';
+import { AuthService } from '../services/auth.service';
 import { CaptureComponent } from './capture.component';
-import { Profile } from './models';
-import { SupabaseService } from './supabase.service';
+import { Profile } from '../models/models';
+import { SupabaseService } from '../services/supabase.service';
 
 describe('CaptureComponent', () => {
   let fixture: ComponentFixture<CaptureComponent>;
   let component: CaptureComponent;
-  let supabase: jasmine.SpyObj<SupabaseService>;
+  let supabase: MockedObject<Pick<SupabaseService, 'saveSighting'>>;
   const initialProfile: Profile = {
     id: 'player',
     display_name: 'Spieler',
@@ -36,9 +37,15 @@ describe('CaptureComponent', () => {
   }
 
   beforeEach(async () => {
+    Object.defineProperty(navigator, 'geolocation', {
+      configurable: true,
+      value: { getCurrentPosition: vi.fn() },
+    });
     profile.set({ ...initialProfile });
-    supabase = jasmine.createSpyObj<SupabaseService>('SupabaseService', ['saveSighting']);
-    supabase.saveSighting.and.resolveTo({ ...initialProfile, current_number: 38 });
+    supabase = {
+      saveSighting: vi.fn().mockName('SupabaseService.saveSighting'),
+    };
+    supabase.saveSighting.mockResolvedValue({ ...initialProfile, current_number: 38 });
     await TestBed.configureTestingModule({
       imports: [CaptureComponent],
       providers: [
@@ -60,7 +67,8 @@ describe('CaptureComponent', () => {
     expect(component.number).toBe(38);
     expect(component.buttonLabel()).toBe('Bestätigen');
     await component.submit();
-    expect(supabase.saveSighting).toHaveBeenCalledOnceWith({
+    expect(supabase.saveSighting).toHaveBeenCalledTimes(1);
+    expect(supabase.saveSighting).toHaveBeenCalledWith({
       number: 38,
       type: 'confirmed',
       latitude: null,
@@ -78,14 +86,14 @@ describe('CaptureComponent', () => {
   });
 
   it('allows repeated future hints without increasing progress', async () => {
-    supabase.saveSighting.and.resolveTo(initialProfile);
+    supabase.saveSighting.mockResolvedValue(initialProfile);
     for (let attempt = 0; attempt < 2; attempt++) {
       component.number = 52;
       expect(component.buttonLabel()).toBe('Vormerken');
       await component.submit();
     }
     expect(supabase.saveSighting).toHaveBeenCalledTimes(2);
-    expect(supabase.saveSighting.calls.mostRecent().args[0].type).toBe('hint');
+    expect(vi.mocked(supabase.saveSighting).mock.lastCall![0].type).toBe('hint');
     expect(profile()?.current_number).toBe(37);
   });
 
@@ -103,7 +111,7 @@ describe('CaptureComponent', () => {
   });
 
   it('shows failures and retains inputs without optimistic progress', async () => {
-    supabase.saveSighting.and.rejectWith(new Error('network failure'));
+    supabase.saveSighting.mockRejectedValue(new Error('network failure'));
     component.note = 'Bahnhof';
     await component.submit();
     fixture.detectChanges();
@@ -112,41 +120,41 @@ describe('CaptureComponent', () => {
     expect(component.number).toBe(38);
     expect(component.note).toBe('Bahnhof');
     expect(profile()?.current_number).toBe(37);
-    expect(component.saving()).toBeFalse();
+    expect(component.saving()).toBe(false);
     expect(component.saveMessage()).toBe('');
   });
 
   it('prefills and confirms the next number beyond 999', async () => {
     profile.set({ ...initialProfile, current_number: 999 });
-    supabase.saveSighting.and.resolveTo({ ...initialProfile, current_number: 1000 });
-    spyOn(TestBed.inject(ActivatedRoute).snapshot.queryParamMap, 'get').and.returnValue('1000');
+    supabase.saveSighting.mockResolvedValue({ ...initialProfile, current_number: 1000 });
+    vi.spyOn(TestBed.inject(ActivatedRoute).snapshot.queryParamMap, 'get').mockReturnValue('1000');
     component.ngOnInit();
     fixture.detectChanges();
     expect(component.number).toBe(1000);
     expect(component.buttonLabel()).toBe('Bestätigen');
     const input: HTMLInputElement = fixture.nativeElement.querySelector('input[name="number"]');
     const button: HTMLButtonElement = fixture.nativeElement.querySelector('button[type="submit"]');
-    expect(input.hasAttribute('max')).toBeFalse();
-    expect(button.disabled).toBeFalse();
+    expect(input.hasAttribute('max')).toBe(false);
+    expect(button.disabled).toBe(false);
     await component.submit();
-    expect(supabase.saveSighting.calls.mostRecent().args[0].number).toBe(1000);
-    expect(supabase.saveSighting.calls.mostRecent().args[0].type).toBe('confirmed');
+    expect(vi.mocked(supabase.saveSighting).mock.lastCall![0].number).toBe(1000);
+    expect(vi.mocked(supabase.saveSighting).mock.lastCall![0].type).toBe('confirmed');
     expect(profile()?.current_number).toBe(1000);
   });
 
   it('saves numbers beyond 999 as future hints', async () => {
-    supabase.saveSighting.and.resolveTo(initialProfile);
+    supabase.saveSighting.mockResolvedValue(initialProfile);
     component.number = 10000;
-    expect(component.validNumber()).toBeTrue();
+    expect(component.validNumber()).toBe(true);
     expect(component.buttonLabel()).toBe('Vormerken');
     await component.submit();
-    expect(supabase.saveSighting.calls.mostRecent().args[0].number).toBe(10000);
-    expect(supabase.saveSighting.calls.mostRecent().args[0].type).toBe('hint');
+    expect(vi.mocked(supabase.saveSighting).mock.lastCall![0].number).toBe(10000);
+    expect(vi.mocked(supabase.saveSighting).mock.lastCall![0].type).toBe('hint');
     expect(profile()?.current_number).toBe(37);
   });
 
   it('explains a stale progress conflict without displaying success', async () => {
-    supabase.saveSighting.and.rejectWith({ code: 'NC001', message: 'Number already completed' });
+    supabase.saveSighting.mockRejectedValue({ code: 'NC001', message: 'Number already completed' });
     await component.submit();
     expect(component.saveError()).toContain('Fortschritt hat sich geändert');
     expect(component.saveMessage()).toBe('');
@@ -154,14 +162,14 @@ describe('CaptureComponent', () => {
 
   it('disables submission and blocks duplicate requests while waiting for GPS', async () => {
     component.saveLocation = true;
-    let completeGps: PositionCallback = () => fail('GPS callback missing');
-    spyOn(navigator.geolocation, 'getCurrentPosition').and.callFake((success) => {
+    let completeGps: PositionCallback = () => expect.fail('GPS callback missing');
+    vi.spyOn(navigator.geolocation, 'getCurrentPosition').mockImplementation((success) => {
       completeGps = success;
     });
     const submission = component.submit();
     fixture.detectChanges();
     const button: HTMLButtonElement = fixture.nativeElement.querySelector('button[type="submit"]');
-    expect(button.disabled).toBeTrue();
+    expect(button.disabled).toBe(true);
     expect(component.locationStatus()).toContain('Standort wird erfasst');
     expect(fixture.nativeElement.querySelector('.loading-spinner')).not.toBeNull();
     await component.submit();
@@ -174,16 +182,16 @@ describe('CaptureComponent', () => {
 
   it('requests fresh GPS for each capture and does not reuse it after a GPS failure', async () => {
     component.saveLocation = true;
-    const gps = spyOn(navigator.geolocation, 'getCurrentPosition');
-    gps.and.callFake((success) => success(position(50)));
+    const gps = vi.spyOn(navigator.geolocation, 'getCurrentPosition').mockReturnValue(undefined);
+    gps.mockImplementation((success) => success(position(50)));
     await component.submit();
     component.number = 39;
-    gps.and.callFake((success) => success(position(51)));
+    gps.mockImplementation((success) => success(position(51)));
     await component.submit();
-    expect(supabase.saveSighting.calls.argsFor(0)[0].latitude).toBe(50);
-    expect(supabase.saveSighting.calls.argsFor(1)[0].latitude).toBe(51);
+    expect(vi.mocked(supabase.saveSighting).mock.calls[0]![0].latitude).toBe(50);
+    expect(vi.mocked(supabase.saveSighting).mock.calls[1]![0].latitude).toBe(51);
     component.number = 52;
-    gps.and.callFake((_success, failure) =>
+    gps.mockImplementation((_success, failure) =>
       failure?.({
         code: 3,
         message: 'timeout',
@@ -193,15 +201,15 @@ describe('CaptureComponent', () => {
       }),
     );
     await component.submit();
-    expect(supabase.saveSighting.calls.argsFor(2)[0].latitude).toBeNull();
+    expect(vi.mocked(supabase.saveSighting).mock.calls[2]![0].latitude).toBeNull();
     expect(component.locationStatus()).toBe('Ohne Standort gespeichert.');
-    expect(gps.calls.mostRecent().args[2]?.maximumAge).toBe(0);
+    expect(vi.mocked(gps).mock.lastCall![2]?.maximumAge).toBe(0);
   });
 
   it('does not request GPS when location saving is disabled', async () => {
-    const gps = spyOn(navigator.geolocation, 'getCurrentPosition');
+    const gps = vi.spyOn(navigator.geolocation, 'getCurrentPosition').mockReturnValue(undefined);
     await component.submit();
     expect(gps).not.toHaveBeenCalled();
-    expect(supabase.saveSighting.calls.mostRecent().args[0].longitude).toBeNull();
+    expect(vi.mocked(supabase.saveSighting).mock.lastCall![0].longitude).toBeNull();
   });
 });

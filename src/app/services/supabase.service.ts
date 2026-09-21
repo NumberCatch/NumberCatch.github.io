@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { environment } from '../environments/environment';
-import { GroupMember, NewSighting, PlayerGroup, Profile, Sighting } from './models';
+import { environment } from '../../environments/environment';
+import { GroupMember, NewSighting, PlayerGroup, Profile, Sighting } from '../models/models';
 
 @Injectable({ providedIn: 'root' })
 export class SupabaseService {

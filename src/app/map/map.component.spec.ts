@@ -1,9 +1,9 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { AuthService } from './auth.service';
+import { AuthService } from '../services/auth.service';
 import { MapComponent } from './map.component';
-import { Profile, Sighting } from './models';
-import { SupabaseService } from './supabase.service';
+import { Profile, Sighting } from '../models/models';
+import { SupabaseService } from '../services/supabase.service';
 
 describe('MapComponent filters', () => {
   const profile: Profile = {

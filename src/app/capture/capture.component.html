@@ -1,0 +1,75 @@
+<section class="page narrow">
+  <p class="eyebrow">NEUER FUND</p>
+  <h1>Kennzeichen erfassen</h1>
+  <p class="muted">
+    Deine nächste Zahl ist <strong>{{ next() }}</strong
+    >.
+  </p>
+  <form (ngSubmit)="submit()">
+    <mat-form-field appearance="outline" class="number-field">
+      <mat-label>Welche Zahl hast du gesehen?</mat-label>
+      <input
+        matInput
+        type="number"
+        min="1"
+        name="number"
+        [(ngModel)]="number"
+        [disabled]="saving()"
+        required
+        inputmode="numeric"
+      />
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Notiz (optional)</mat-label>
+      <textarea
+        matInput
+        name="note"
+        [(ngModel)]="note"
+        rows="2"
+        maxlength="500"
+        [disabled]="saving()"
+        placeholder="z. B. Parkplatz am Bahnhof"
+      ></textarea>
+      <mat-hint align="end">{{ note.length }}/500</mat-hint>
+    </mat-form-field>
+    <mat-checkbox
+      name="saveLocation"
+      [(ngModel)]="saveLocation"
+      (ngModelChange)="locationPreferenceChanged()"
+      [disabled]="saving()"
+      >Standort speichern</mat-checkbox
+    >
+    <div class="location-status" role="status">{{ locationStatus() }}</div>
+    <button
+      mat-raised-button
+      color="primary"
+      class="full"
+      type="submit"
+      [disabled]="saving() || !validNumber()"
+      [attr.aria-busy]="saving()"
+    >
+      @if (saving()) {
+        <mat-spinner class="loading-spinner" diameter="18" aria-label="Speichern läuft" />
+      }
+      {{ saving() ? 'Wird gespeichert…' : buttonLabel() }}
+    </button>
+  </form>
+  @if (saveError()) {
+    <p class="error" role="alert">{{ saveError() }}</p>
+  }
+  @if (saveMessage()) {
+    <mat-card class="result-card good"
+      ><mat-card-content
+        ><h2>{{ saveMessage() }}</h2></mat-card-content
+      ></mat-card
+    >
+  }
+  @if (result(); as found) {
+    <mat-card class="result-card"
+      ><mat-card-content
+        ><h2>{{ message(found) }}</h2>
+        <p>{{ description(found) }}</p></mat-card-content
+      ></mat-card
+    >
+  }
+</section>

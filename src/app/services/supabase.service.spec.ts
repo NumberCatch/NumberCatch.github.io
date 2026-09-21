@@ -1,4 +1,5 @@
-import { NewSighting, Profile, Sighting } from './models';
+import type { Mock } from 'vitest';
+import { NewSighting, Profile, Sighting } from '../models/models';
 import { SupabaseService } from './supabase.service';
 
 describe('SupabaseService persistence', () => {
@@ -17,22 +18,31 @@ describe('SupabaseService persistence', () => {
     note: null,
   };
   let service: SupabaseService;
-  let single: jasmine.Spy;
-  let from: jasmine.Spy;
-  let rpc: jasmine.Spy;
-  let upload: jasmine.Spy;
+  let single: Mock;
+  let from: Mock;
+  let rpc: Mock;
+  let upload: Mock;
 
   beforeEach(() => {
-    single = jasmine.createSpy('single').and.resolveTo({ data: profile, error: null });
+    single = vi.fn().mockName('single').mockResolvedValue({ data: profile, error: null });
     const builder = {
-      update: jasmine.createSpy('update').and.callFake(() => builder),
-      eq: jasmine.createSpy('eq').and.callFake(() => builder),
-      select: jasmine.createSpy('select').and.callFake(() => builder),
+      update: vi
+        .fn()
+        .mockName('update')
+        .mockImplementation(() => builder),
+      eq: vi
+        .fn()
+        .mockName('eq')
+        .mockImplementation(() => builder),
+      select: vi
+        .fn()
+        .mockName('select')
+        .mockImplementation(() => builder),
       single,
     };
-    from = jasmine.createSpy('from').and.returnValue(builder);
-    rpc = jasmine.createSpy('rpc').and.returnValue({ single });
-    upload = jasmine.createSpy('upload').and.resolveTo({ error: null });
+    from = vi.fn().mockName('from').mockReturnValue(builder);
+    rpc = vi.fn().mockName('rpc').mockReturnValue({ single });
+    upload = vi.fn().mockName('upload').mockResolvedValue({ error: null });
     // Supply a local client stub without starting a real Supabase auth session.
     service = Object.create(SupabaseService.prototype) as SupabaseService;
     Object.defineProperty(service, 'sightingsCache', { value: new Map() });
@@ -54,7 +64,8 @@ describe('SupabaseService persistence', () => {
 
   it('uses one RPC and returns the database profile without direct table writes', async () => {
     expect(await service.saveSighting(sighting)).toEqual(profile);
-    expect(rpc).toHaveBeenCalledOnceWith('capture_sighting', {
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(rpc).toHaveBeenCalledWith('capture_sighting', {
       p_number: 1,
       p_type: 'confirmed',
       p_latitude: null,
@@ -67,24 +78,24 @@ describe('SupabaseService persistence', () => {
 
   it('propagates an RPC conflict to the capture UI', async () => {
     const error = { code: 'NC001', message: 'Already completed' };
-    single.and.resolveTo({ data: null, error });
-    await expectAsync(service.saveSighting(sighting)).toBeRejectedWith(error);
+    single.mockResolvedValue({ data: null, error });
+    await expect(service.saveSighting(sighting)).rejects.toEqual(error);
   });
 
   it('does not report avatar success if its profile update fails', async () => {
     const error = { code: '42501', message: 'Permission denied' };
-    single.and.resolveTo({ data: null, error });
-    await expectAsync(
+    single.mockResolvedValue({ data: null, error });
+    await expect(
       service.uploadAvatar('player', new File(['image'], 'avatar.png', { type: 'image/png' })),
-    ).toBeRejectedWith(error);
+    ).rejects.toEqual(error);
     expect(upload).toHaveBeenCalled();
   });
 
   it('rejects avatar updates that affect no profile', async () => {
-    single.and.resolveTo({ data: null, error: null });
-    await expectAsync(
+    single.mockResolvedValue({ data: null, error: null });
+    await expect(
       service.uploadAvatar('player', new File(['image'], 'avatar.png')),
-    ).toBeRejectedWithError('Avatar konnte nicht gespeichert werden.');
+    ).rejects.toThrowError('Avatar konnte nicht gespeichert werden.');
   });
 
   it('returns the avatar URL only after storage and profile updates succeed', async () => {
@@ -107,21 +118,26 @@ describe('SupabaseService persistence', () => {
         created_at: '2026-09-21T08:00:00.000Z',
       },
     ];
-    const query = jasmine.createSpyObj('query', ['select', 'eq', 'order']);
-    query.select.and.returnValue(query);
-    query.eq.and.returnValue(query);
-    query.order.and.resolveTo({ data: sightings, error: null });
+    const query = {
+      select: vi.fn().mockName('query.select'),
+      eq: vi.fn().mockName('query.eq'),
+      order: vi.fn().mockName('query.order'),
+    };
+    query.select.mockReturnValue(query);
+    query.eq.mockReturnValue(query);
+    query.order.mockResolvedValue({ data: sightings, error: null });
     const cachedService = Object.create(SupabaseService.prototype) as SupabaseService;
     Object.defineProperty(cachedService, 'sightingsCache', { value: new Map() });
     Object.defineProperty(cachedService, 'groupsCache', { value: new Map() });
     Object.defineProperty(cachedService, 'membersCache', { value: new Map() });
-    const fromSpy = jasmine.createSpy('from').and.returnValue(query);
+    const fromSpy = vi.fn().mockName('from').mockReturnValue(query);
     Object.defineProperty(cachedService, 'client', { value: { from: fromSpy } });
 
     await cachedService.ownSightings('player');
     const result = await cachedService.ownSightings('player');
 
     expect(result).toEqual(sightings);
-    expect(fromSpy).toHaveBeenCalledOnceWith('sightings');
+    expect(fromSpy).toHaveBeenCalledTimes(1);
+    expect(fromSpy).toHaveBeenCalledWith('sightings');
   });
 });

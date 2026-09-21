@@ -1,46 +1,29 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { AuthService } from './auth.service';
-import { SupabaseService } from './supabase.service';
+import { AuthService } from '../services/auth.service';
+import { SupabaseService } from '../services/supabase.service';
 import { LucideLogOut } from '@lucide/angular';
-import packageJson from '../../package.json';
+import packageJson from '../../../package.json';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 @Component({
-  standalone: true,
-  imports: [FormsModule, LucideLogOut],
-  template: `<section class="page narrow">
-    <p class="eyebrow">DEIN KONTO</p>
-    <h1>Profil</h1>
-    <div class="profile-card">
-      <div
-        class="profile-avatar"
-        [style.background-image]="
-          auth.profile()?.avatar_url ? 'url(' + auth.profile()?.avatar_url + ')' : null
-        "
-      >
-        @if (uploading()) {
-          <span class="loading-spinner" aria-label="Avatar wird hochgeladen"></span>
-        }
-        @if (!uploading()) {
-          {{ auth.profile()?.avatar_url ? '' : initials() }}
-        }
-      </div>
-      <label class="upload-label" [class.disabled]="uploading()"
-        >Avatar ändern<input
-          type="file"
-          accept="image/*"
-          [disabled]="uploading()"
-          (change)="upload($event)" /></label
-      ><label>Anzeigename<input [(ngModel)]="name" maxlength="80" /></label
-      ><button class="primary full" (click)="save()">Profil speichern</button>
-      @if (message) {
-        <p class="muted">{{ message }}</p>
-      }
-    </div>
-    <button class="secondary full" (click)="logout()"><svg lucideLogOut></svg>Ausloggen</button>
-    <p class="app-version">Version {{ appVersion }}</p>
-  </section>`,
+  imports: [
+    FormsModule,
+    LucideLogOut,
+    MatButtonModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatProgressSpinnerModule,
+  ],
+  templateUrl: './profile.component.html',
+  styleUrl: './profile.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ProfileComponent {
   readonly auth = inject(AuthService);

@@ -1,0 +1,87 @@
+<section class="page">
+  <p class="eyebrow">DEINE GRUPPE</p>
+  <h1>Freunde</h1>
+  <mat-card class="group-actions"
+    ><mat-card-content>
+      <strong>Neue Gruppe erstellen</strong>
+      <p class="muted">Starte eine neue Runde mit deinen Freunden.</p>
+      <mat-form-field appearance="outline"
+        ><mat-label>Name der neuen Gruppe</mat-label><input matInput [(ngModel)]="groupName"
+      /></mat-form-field>
+      <button mat-raised-button color="primary" (click)="create()">Gruppe erstellen</button>
+    </mat-card-content></mat-card
+  >
+  <mat-card class="group-actions"
+    ><mat-card-content>
+      <strong>Gruppe beitreten</strong>
+      <p class="muted">Nutze die Gruppen-ID oder den kopierten Link.</p>
+      <mat-form-field appearance="outline"
+        ><mat-label>Gruppen-ID</mat-label><input matInput [(ngModel)]="groupId"
+      /></mat-form-field>
+      <button mat-stroked-button (click)="join()">Gruppe beitreten</button>
+    </mat-card-content></mat-card
+  >
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+  @if (groups().length) {
+    <div class="group-list" role="tablist">
+      @for (group of groups(); track group.id) {
+        <button
+          mat-button
+          class="group-tab"
+          [class.selected]="selected()?.id === group.id"
+          (click)="select(group)"
+        >
+          {{ group.name }}
+        </button>
+      }
+    </div>
+  } @else {
+    <mat-card class="empty-state"
+      ><mat-card-content
+        ><svg class="empty-icon" lucideUsers></svg>
+        <h2>Noch keine Gruppe</h2>
+        <p class="muted">
+          Erstelle eine Gruppe oder tritt mit einer Gruppen-ID bei.
+        </p></mat-card-content
+      ></mat-card
+    >
+  }
+  @if (selected()) {
+    <div class="invite-actions">
+      <button mat-stroked-button (click)="copyGroupLink()">Gruppenlink kopieren</button>
+      @if (selected()?.created_by === auth.profile()?.id) {
+        <button mat-button color="warn" (click)="deleteSelected()">
+          <svg lucideTrash></svg>Gruppe löschen
+        </button>
+      }
+    </div>
+  }
+  @if (inviteMessage()) {
+    <p class="success">{{ inviteMessage() }}</p>
+  }
+  @if (selected()) {
+    <div class="member-list">
+      <p class="muted group-summary">
+        {{ members().length }} {{ members().length === 1 ? 'Mitglied' : 'Mitglieder' }}
+      </p>
+      @for (member of members(); track member.user_id) {
+        <div class="member-row">
+          <div
+            class="avatar"
+            [style.background-image]="
+              member.profile.avatar_url ? 'url(' + member.profile.avatar_url + ')' : null
+            "
+          >
+            {{ member.profile.avatar_url ? '' : initials(member.profile.display_name) }}
+          </div>
+          <div>
+            <strong>{{ member.profile.display_name }}</strong
+            ><small class="muted">{{ member.profile.current_number }} abgeschlossen</small>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</section>

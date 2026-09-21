@@ -1,0 +1,39 @@
+<section class="page narrow">
+  <p class="eyebrow">DEIN KONTO</p>
+  <h1>Profil</h1>
+  <mat-card class="profile-card">
+    <mat-card-content>
+      <div
+        class="profile-avatar"
+        [style.background-image]="
+          auth.profile()?.avatar_url ? 'url(' + auth.profile()?.avatar_url + ')' : null
+        "
+      >
+        @if (uploading()) {
+          <mat-spinner diameter="28" aria-label="Avatar wird hochgeladen" />
+        }
+        @if (!uploading()) {
+          {{ auth.profile()?.avatar_url ? '' : initials() }}
+        }
+      </div>
+      <label class="upload-label" [class.disabled]="uploading()">
+        Avatar ändern
+        <input type="file" accept="image/*" [disabled]="uploading()" (change)="upload($event)" />
+      </label>
+      <mat-form-field appearance="outline">
+        <mat-label>Anzeigename</mat-label>
+        <input matInput [(ngModel)]="name" maxlength="80" />
+      </mat-form-field>
+      <button mat-raised-button color="primary" class="full" (click)="save()">
+        Profil speichern
+      </button>
+      @if (message) {
+        <p class="muted">{{ message }}</p>
+      }
+    </mat-card-content>
+  </mat-card>
+  <button mat-stroked-button class="full" (click)="logout()">
+    <svg lucideLogOut></svg>Ausloggen
+  </button>
+  <p class="app-version">Version {{ appVersion }}</p>
+</section>

@@ -1,98 +1,35 @@
-import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { AuthService } from './auth.service';
-import { GroupMember, PlayerGroup } from './models';
-import { SupabaseService } from './supabase.service';
+import { AuthService } from '../services/auth.service';
+import { GroupMember, PlayerGroup } from '../models/models';
+import { SupabaseService } from '../services/supabase.service';
 import { LucideTrash, LucideUsers } from '@lucide/angular';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { firstValueFrom } from 'rxjs';
+import { ConfirmDialog, ConfirmDialogData } from '../shared/confirm-dialog/confirm-dialog';
 
 @Component({
-  standalone: true,
-  imports: [CommonModule, FormsModule, LucideTrash, LucideUsers],
-  template: `<section class="page">
-    <p class="eyebrow">DEINE GRUPPE</p>
-    <h1>Freunde</h1>
-    <div class="group-actions">
-      <div>
-        <strong>Neue Gruppe erstellen</strong>
-        <p class="muted">Starte eine neue Runde mit deinen Freunden.</p>
-      </div>
-      <input
-        [(ngModel)]="groupName"
-        placeholder="Neue Gruppe"
-        aria-label="Name der neuen Gruppe"
-      /><button class="primary" (click)="create()">Gruppe erstellen</button>
-    </div>
-    <div class="group-actions">
-      <div>
-        <strong>Gruppe beitreten</strong>
-        <p class="muted">Nutze die Gruppen-ID oder den kopierten Link.</p>
-      </div>
-      <input
-        [(ngModel)]="groupId"
-        placeholder="Gruppen-ID zum Beitreten"
-        aria-label="Gruppen-ID"
-      /><button class="secondary" (click)="join()">Gruppe beitreten</button>
-    </div>
-    @if (error()) {
-      <p class="error">{{ error() }}</p>
-    }
-    @if (groups().length) {
-      <div class="group-list">
-        <button
-          *ngFor="let group of groups()"
-          class="group-tab"
-          [class.selected]="selected()?.id === group.id"
-          (click)="select(group)"
-        >
-          {{ group.name }}
-        </button>
-      </div>
-    } @else {
-      <div class="empty-state">
-        <svg class="empty-icon" lucideUsers></svg>
-        <h2>Noch keine Gruppe</h2>
-        <p class="muted">Erstelle eine Gruppe oder tritt mit einer Gruppen-ID bei.</p>
-      </div>
-    }
-    @if (selected()) {
-      <div class="invite-actions">
-        <button class="secondary" (click)="copyGroupLink()">Gruppenlink kopieren</button>
-        @if (selected()?.created_by === auth.profile()?.id) {
-          <button class="danger-button" type="button" (click)="deleteSelected()">
-            <svg lucideTrash></svg>Gruppe löschen
-          </button>
-        }
-      </div>
-    }
-    @if (inviteMessage()) {
-      <p class="success">{{ inviteMessage() }}</p>
-    }
-    @if (selected()) {
-      <div class="member-list">
-        <p class="muted group-summary">
-          {{ members().length }} {{ members().length === 1 ? 'Mitglied' : 'Mitglieder' }}
-        </p>
-        <div class="member-row" *ngFor="let member of members()">
-          <div
-            class="avatar"
-            [style.background-image]="
-              member.profile.avatar_url ? 'url(' + member.profile.avatar_url + ')' : null
-            "
-          >
-            {{ member.profile.avatar_url ? '' : initials(member.profile.display_name) }}
-          </div>
-          <div>
-            <strong>{{ member.profile.display_name }}</strong
-            ><small class="muted">{{ member.profile.current_number }} abgeschlossen</small>
-          </div>
-        </div>
-      </div>
-    }
-  </section>`,
+  imports: [
+    FormsModule,
+    LucideTrash,
+    LucideUsers,
+    MatButtonModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatDialogModule,
+  ],
+  templateUrl: './friends.component.html',
+  styleUrl: './friends.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FriendsComponent implements OnInit {
   readonly auth = inject(AuthService);
+  private readonly dialog = inject(MatDialog);
   private readonly supabase = inject(SupabaseService);
   readonly groups = signal<PlayerGroup[]>([]);
   readonly members = signal<GroupMember[]>([]);
@@ -180,7 +117,12 @@ export class FriendsComponent implements OnInit {
     const group = this.selected();
     const userId = this.auth.profile()?.id;
     if (!group || !userId || group.created_by !== userId) return;
-    if (!window.confirm(`Gruppe „${group.name}“ wirklich löschen?`)) return;
+    const confirmed = await this.confirm({
+      title: 'Gruppe löschen?',
+      message: `Gruppe „${group.name}“ wirklich löschen?`,
+      confirmLabel: 'Löschen',
+    });
+    if (!confirmed) return;
     try {
       await this.supabase.deleteGroup(group.id, userId);
       this.stopRealtime?.();
@@ -197,5 +139,8 @@ export class FriendsComponent implements OnInit {
   }
   initials(name: string): string {
     return name.slice(0, 2).toUpperCase();
+  }
+  private async confirm(data: ConfirmDialogData): Promise<boolean> {
+    return (await firstValueFrom(this.dialog.open(ConfirmDialog, { data }).afterClosed())) === true;
   }
 }

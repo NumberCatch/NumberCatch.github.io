@@ -1,23 +1,26 @@
 import { CommonModule } from '@angular/common';
 import {
-  AfterViewInit,
   Component,
   ElementRef,
   OnDestroy,
   ViewChild,
   inject,
   signal,
+  ChangeDetectionStrategy,
 } from '@angular/core';
-import maplibregl, {
-  GeolocateControl,
-  Map as MapLibreMap,
-  Marker,
-  Popup,
-} from 'maplibre-gl';
-import { AuthService } from './auth.service';
-import { Sighting } from './models';
-import { SupabaseService } from './supabase.service';
-import { environment } from '../environments/environment';
+import { Map as MapLibreMap } from 'maplibre-gl';
+import { NgxMapLibreGLModule } from '@maplibre/ngx-maplibre-gl';
+import { MatButtonModule } from '@angular/material/button';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { firstValueFrom } from 'rxjs';
+import { ConfirmDialog, ConfirmDialogData } from '../shared/confirm-dialog/confirm-dialog';
+import { AuthService } from '../services/auth.service';
+import { Sighting } from '../models/models';
+import { SupabaseService } from '../services/supabase.service';
+import { environment } from '../../environments/environment';
 import {
   LucideArrowDownUp,
   LucideCheck,
@@ -44,9 +47,14 @@ interface MapViewport {
 }
 
 @Component({
-  standalone: true,
   imports: [
     CommonModule,
+    NgxMapLibreGLModule,
+    MatButtonModule,
+    MatButtonToggleModule,
+    MatMenuModule,
+    MatTooltipModule,
+    MatDialogModule,
     LucideArrowDownUp,
     LucideCheck,
     LucideChevronDown,
@@ -54,24 +62,22 @@ interface MapViewport {
     LucideTrash,
   ],
   styleUrl: './map.component.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './map.component.html',
 })
-export class MapComponent implements AfterViewInit, OnDestroy {
-  @ViewChild('map', { static: true }) mapElement!: ElementRef<HTMLDivElement>;
+export class MapComponent implements OnDestroy {
+  @ViewChild('map', { read: ElementRef }) private mapElement?: ElementRef<HTMLElement>;
   private readonly supabase = inject(SupabaseService);
   private readonly auth = inject(AuthService);
+  private readonly dialog = inject(MatDialog);
   private readonly viewportStorageKey = 'number-catch-map-viewport';
   private map?: MapLibreMap;
-  private geolocateControl?: GeolocateControl;
   private userLocation?: MapCenter;
   private distanceReference?: MapCenter;
-  private activePopup?: Popup;
-  private readonly markers = new Map<string, Marker>();
   private readonly filterStorageKey = 'number-catch-map-filters-v2';
   readonly sightings = signal<Sighting[]>([]);
   readonly selectedSightingId = signal<string | null>(null);
   readonly view = signal<SightingView>('all');
-  readonly viewMenuOpen = signal(false);
   readonly gpsOnly = signal(false);
   readonly sortOrder = signal<SightingSort>('number');
   readonly loadError = signal('');
@@ -90,39 +96,35 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   readonly visibleStatuses = signal<Set<SightingStatus>>(
     new Set(this.statusOptions.map((option) => option.status)),
   );
+  readonly mapStyle = environment.mapStyleUrl;
+  readonly center = signal<MapCenter>([10.45, 51.16]);
+  readonly zoom = signal(5);
+
   constructor() {
+    const viewport = this.loadViewport();
+    this.center.set(viewport.center);
+    this.zoom.set(viewport.zoom);
     const preferences = this.loadFilterPreferences();
     this.visibleStatuses.set(new Set(preferences.visibleStatuses));
     this.view.set(preferences.view);
     this.gpsOnly.set(preferences.gpsOnly);
     this.sortOrder.set(preferences.sortOrder);
   }
-  ngAfterViewInit(): void {
-    const viewport = this.loadViewport();
-    this.map = new maplibregl.Map({
-      container: this.mapElement.nativeElement,
-      style: environment.mapStyleUrl,
-      center: viewport.center,
-      zoom: viewport.zoom,
-    });
-    this.geolocateControl = new maplibregl.GeolocateControl({
-      positionOptions: { enableHighAccuracy: true },
-      trackUserLocation: false,
-    });
-    this.geolocateControl.on('geolocate', (event) => {
-      this.userLocation = [event.coords.longitude, event.coords.latitude];
-      if (this.sortOrder() === 'distance') {
-        this.distanceReference = this.userLocation;
-        this.updateMarkerVisibility();
-      }
-    });
-    this.map.addControl(this.geolocateControl, 'top-right');
-    this.map.on('moveend', () => this.saveViewport());
-    this.map.once('load', () => this.showAvailableLocation());
+  onMapLoad(map: MapLibreMap): void {
+    this.map = map;
     void this.load();
   }
+  onMoveEnd(): void {
+    this.saveViewport();
+  }
+  onGeolocate(event: { coords: { longitude: number; latitude: number } }): void {
+    this.userLocation = [event.coords.longitude, event.coords.latitude];
+    if (this.sortOrder() === 'distance') {
+      this.distanceReference = this.userLocation;
+    }
+  }
   ngOnDestroy(): void {
-    this.map?.remove();
+    this.map = undefined;
   }
   private async load(): Promise<void> {
     const userId = this.auth.profile()?.id;
@@ -130,31 +132,6 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     try {
       const sightings = await this.supabase.ownSightings(userId);
       this.sightings.set(sightings);
-      for (const sighting of sightings) {
-        if (sighting.latitude === null || sighting.longitude === null) continue;
-        const markerElement = document.createElement('div');
-        markerElement.className = 'number-marker';
-        markerElement.textContent = String(sighting.number);
-        markerElement.style.backgroundColor = this.color(sighting);
-        const popup = new maplibregl.Popup({ anchor: 'bottom', offset: [0, -42] }).setDOMContent(
-          this.popupContent(sighting),
-        );
-        markerElement.addEventListener('click', () => {
-          if (this.activePopup && this.activePopup !== popup) this.activePopup.remove();
-          this.selectedSightingId.set(sighting.id);
-        });
-        popup.on('open', () => (this.activePopup = popup));
-        popup.on('close', () => {
-          if (this.activePopup === popup) this.activePopup = undefined;
-          if (this.selectedSightingId() === sighting.id) this.selectedSightingId.set(null);
-        });
-        const marker = new maplibregl.Marker({ element: markerElement, anchor: 'bottom' })
-          .setLngLat([sighting.longitude, sighting.latitude])
-          .setPopup(popup)
-          .addTo(this.map!);
-        this.markers.set(sighting.id, marker);
-      }
-      this.updateMarkerVisibility();
     } catch (error) {
       this.loadError.set(
         error instanceof Error ? error.message : 'Vormerkungen konnten nicht geladen werden.',
@@ -163,26 +140,29 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   }
   focus(sighting: Sighting): void {
     this.selectedSightingId.set(sighting.id);
+    this.mapElement?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
     if (sighting.latitude === null || sighting.longitude === null || !this.map) return;
-    this.mapElement.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
     this.map.flyTo({ center: [sighting.longitude, sighting.latitude], zoom: 14 });
-    const marker = this.markers.get(sighting.id);
-    if (!marker) return;
-    const popup = marker.getPopup();
-    if (this.activePopup && this.activePopup !== popup) this.activePopup.remove();
-    this.activePopup = popup;
-    marker.togglePopup();
+  }
+  selectFromMarker(sighting: Sighting): void {
+    this.selectedSightingId.set(sighting.id);
+  }
+  closePopup(sighting: Sighting): void {
+    if (this.selectedSightingId() === sighting.id) this.selectedSightingId.set(null);
   }
   async remove(sighting: Sighting, event: Event): Promise<void> {
     event.stopPropagation();
-    if (!window.confirm(`Vormerkung ${sighting.number} wirklich löschen?`)) return;
+    const confirmed = await this.confirm({
+      title: 'Vormerkung löschen?',
+      message: `Vormerkung ${sighting.number} wirklich löschen?`,
+      confirmLabel: 'Löschen',
+    });
+    if (!confirmed) return;
     const userId = this.auth.profile()?.id;
     if (!userId) return;
     try {
       await this.supabase.deleteSighting(userId, sighting.id);
       if (this.selectedSightingId() === sighting.id) this.selectedSightingId.set(null);
-      this.markers.get(sighting.id)?.remove();
-      this.markers.delete(sighting.id);
       this.sightings.update((items) => items.filter((item) => item.id !== sighting.id));
     } catch (error) {
       this.loadError.set(
@@ -239,12 +219,8 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   }
   setView(view: SightingView): void {
     this.view.set(view);
-    this.viewMenuOpen.set(false);
     this.saveFilterPreferences();
     this.updateMarkerVisibility();
-  }
-  toggleViewMenu(): void {
-    this.viewMenuOpen.update((open) => !open);
   }
   toggleGpsOnly(): void {
     this.gpsOnly.update((value) => !value);
@@ -267,18 +243,16 @@ export class MapComponent implements AfterViewInit, OnDestroy {
         ? 'Neueste'
         : 'Entfernung';
   }
+  statusColor(sighting: Sighting): string {
+    if (sighting.type === 'confirmed') return '#48a868';
+    const days = (Date.now() - Date.parse(sighting.created_at)) / 86400000;
+    return days <= 7 ? '#ef8354' : days <= 30 ? '#f2c14e' : '#829ab1';
+  }
   private updateMarkerVisibility(): void {
     const visibleIds = new Set(this.visibleSightings().map((sighting) => sighting.id));
     const selectedId = this.selectedSightingId();
     if (selectedId && !visibleIds.has(selectedId)) {
-      this.activePopup?.remove();
       this.selectedSightingId.set(null);
-    }
-    for (const sighting of this.sightings()) {
-      const marker = this.markers.get(sighting.id);
-      if (marker) {
-        marker.getElement().style.display = visibleIds.has(sighting.id) ? '' : 'none';
-      }
     }
   }
   private loadFilterPreferences(): MapFilterPreferences {
@@ -361,9 +335,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     const longitudeDelta = ((sighting.longitude - reference[0]) * Math.PI) / 180;
     const value =
       Math.sin(latitudeDelta / 2) ** 2 +
-      Math.cos(latitude) *
-        Math.cos(referenceLatitude) *
-        Math.sin(longitudeDelta / 2) ** 2;
+      Math.cos(latitude) * Math.cos(referenceLatitude) * Math.sin(longitudeDelta / 2) ** 2;
     return earthRadiusKm * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
   }
   private loadViewport(): MapViewport {
@@ -411,49 +383,10 @@ export class MapComponent implements AfterViewInit, OnDestroy {
       viewport.zoom <= 24
     );
   }
-  private showAvailableLocation(): void {
-    if (!navigator.geolocation || !this.geolocateControl) return;
-    navigator.permissions
-      ?.query({ name: 'geolocation' })
-      .then((permission) => {
-        if (permission.state === 'granted') this.geolocateControl?.trigger();
-      })
-      .catch(() => undefined);
+  routeUrl(sighting: Sighting): string {
+    return `https://www.google.com/maps/dir/?api=1&destination=${sighting.latitude},${sighting.longitude}`;
   }
-  private color(sighting: Sighting): string {
-    if (sighting.type === 'confirmed') return '#48a868';
-    const days = (Date.now() - Date.parse(sighting.created_at)) / 86400000;
-    return days <= 7 ? '#ef8354' : days <= 30 ? '#f2c14e' : '#829ab1';
-  }
-  private popupContent(sighting: Sighting): HTMLDivElement {
-    const content = document.createElement('div');
-    content.className = 'map-popup-content';
-
-    const title = document.createElement('strong');
-    title.textContent = `${sighting.number} · ${sighting.type === 'confirmed' ? 'Bestätigt' : this.ageLabel(sighting.created_at)}`;
-    content.append(title);
-
-    const time = document.createElement('small');
-    time.textContent = new Intl.DateTimeFormat('de-DE', {
-      dateStyle: 'short',
-      timeStyle: 'short',
-    }).format(new Date(sighting.created_at));
-    content.append(time);
-
-    if (sighting.note) {
-      const note = document.createElement('span');
-      note.textContent = sighting.note;
-      content.append(note);
-    }
-
-    const route = document.createElement('a');
-    route.className = 'popup-route';
-    route.href = `https://www.google.com/maps/dir/?api=1&destination=${sighting.latitude},${sighting.longitude}`;
-    route.target = '_blank';
-    route.rel = 'noopener noreferrer';
-    route.textContent = 'Route planen';
-    content.append(route);
-
-    return content;
+  private async confirm(data: ConfirmDialogData): Promise<boolean> {
+    return (await firstValueFrom(this.dialog.open(ConfirmDialog, { data }).afterClosed())) === true;
   }
 }

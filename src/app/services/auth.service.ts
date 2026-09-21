@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { SupabaseService } from './supabase.service';
-import { Profile } from './models';
+import { Profile } from '../models/models';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {

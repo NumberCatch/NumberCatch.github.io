@@ -1,5 +1,5 @@
 import { AuthService } from './auth.service';
-import { Profile } from './models';
+import { Profile } from '../models/models';
 import { SupabaseService } from './supabase.service';
 
 describe('AuthService', () => {
@@ -10,10 +10,13 @@ describe('AuthService', () => {
       avatar_url: null,
       current_number: 12,
     };
-    const getUser = jasmine.createSpy('getUser').and.resolveTo({
-      data: { user: { id: profile.id } },
-    });
-    const ensureProfile = jasmine.createSpy('ensureProfile').and.resolveTo(profile);
+    const getUser = vi
+      .fn()
+      .mockName('getUser')
+      .mockResolvedValue({
+        data: { user: { id: profile.id } },
+      });
+    const ensureProfile = vi.fn().mockName('ensureProfile').mockResolvedValue(profile);
     const supabase = {
       client: { auth: { getUser } },
       ensureProfile,
@@ -22,27 +25,31 @@ describe('AuthService', () => {
 
     await Promise.all([service.initialize(), service.initialize(), service.initialize()]);
 
-    expect(getUser).toHaveBeenCalledOnceWith();
-    expect(ensureProfile).toHaveBeenCalledOnceWith(profile.id, 'Spieler');
-    expect(service.authenticated()).toBeTrue();
+    expect(getUser).toHaveBeenCalledTimes(1);
+
+    expect(getUser).toHaveBeenCalledWith();
+    expect(ensureProfile).toHaveBeenCalledTimes(1);
+    expect(ensureProfile).toHaveBeenCalledWith(profile.id, 'Spieler');
+    expect(service.authenticated()).toBe(true);
     expect(service.profile()).toEqual(profile);
   });
 
   it('allows a retry when initial session loading fails', async () => {
-    const getUser = jasmine
-      .createSpy('getUser')
-      .and.rejectWith(new Error('temporary network failure'));
+    const getUser = vi
+      .fn()
+      .mockName('getUser')
+      .mockRejectedValue(new Error('temporary network failure'));
     const supabase = {
       client: { auth: { getUser } },
     } as unknown as SupabaseService;
     const service = new AuthService(supabase);
 
-    await expectAsync(service.initialize()).toBeRejectedWithError('temporary network failure');
-    getUser.and.resolveTo({ data: { user: null } });
+    await expect(service.initialize()).rejects.toThrowError('temporary network failure');
+    getUser.mockResolvedValue({ data: { user: null } });
 
     await service.initialize();
 
     expect(getUser).toHaveBeenCalledTimes(2);
-    expect(service.authenticated()).toBeFalse();
+    expect(service.authenticated()).toBe(false);
   });
 });

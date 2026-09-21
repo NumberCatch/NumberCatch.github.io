@@ -1,9 +1,9 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { AuthService } from './auth.service';
+import { AuthService } from '../services/auth.service';
 import { NumbersComponent } from './numbers.component';
-import { Profile, PlayerGroup, GroupMember } from './models';
-import { SupabaseService } from './supabase.service';
+import { Profile, PlayerGroup, GroupMember } from '../models/models';
+import { SupabaseService } from '../services/supabase.service';
 
 describe('NumbersComponent group members', () => {
   it('shows a friend shared across two groups only once', async () => {
@@ -15,12 +15,12 @@ describe('NumbersComponent group members', () => {
       created_by: own.id,
       created_at: '',
     }));
-    const supabase = jasmine.createSpyObj<SupabaseService>('SupabaseService', [
-      'groups',
-      'members',
-    ]);
-    supabase.groups.and.resolveTo(groups);
-    supabase.members.and.callFake(
+    const supabase = {
+      groups: vi.fn().mockName('SupabaseService.groups'),
+      members: vi.fn().mockName('SupabaseService.members'),
+    };
+    supabase.groups.mockResolvedValue(groups);
+    supabase.members.mockImplementation(
       async (groupId): Promise<GroupMember[]> =>
         [own, friend].map((profile) => ({
           group_id: groupId,
