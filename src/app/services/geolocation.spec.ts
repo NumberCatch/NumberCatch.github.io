@@ -34,6 +34,11 @@ describe('GeolocationService', () => {
     await expect(second).resolves.toBe(position);
     expect(service.position()).toBe(position);
     expect(navigator.geolocation.watchPosition).toHaveBeenCalledTimes(1);
+    expect(navigator.geolocation.watchPosition).toHaveBeenCalledWith(
+      expect.any(Function),
+      expect.any(Function),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 },
+    );
   });
 
   it('accepts a position supplied by the map while starting the watcher', async () => {
