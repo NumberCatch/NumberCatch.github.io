@@ -20,9 +20,15 @@ import { ConfirmDialog, ConfirmDialogData } from '../shared/confirm-dialog/confi
 import { AuthService } from '../services/auth.service';
 import { Sighting } from '../models/models';
 import { SupabaseService } from '../services/supabase.service';
-import { distanceInMeters, GeolocationService, LocationPosition } from '../services/geolocation';
+import { distanceInMeters, GeolocationService } from '../services/geolocation';
 import { environment } from '../../environments/environment';
-import { LucideArrowDownUp, LucideChevronDown, LucideMapPin, LucideTrash } from '@lucide/angular';
+import {
+  LucideArrowDownUp,
+  LucideChevronDown,
+  LucideLocateFixed,
+  LucideMapPin,
+  LucideTrash,
+} from '@lucide/angular';
 
 type SightingStatus = 'confirmed' | 'fresh' | 'old' | 'stale';
 type SightingSort = 'number' | 'newest' | 'distance';
@@ -51,6 +57,7 @@ interface MapViewport {
     MatDialogModule,
     LucideArrowDownUp,
     LucideChevronDown,
+    LucideLocateFixed,
     LucideMapPin,
     LucideTrash,
   ],
@@ -77,6 +84,8 @@ export class MapComponent implements OnDestroy {
   readonly gpsOnly = signal(false);
   readonly sortOrder = signal<SightingSort>('number');
   readonly loadError = signal('');
+  readonly locationError = signal('');
+  readonly locating = signal(false);
   readonly statusOptions: ReadonlyArray<{ status: SightingStatus; label: string }> = [
     { status: 'confirmed', label: 'bestätigt' },
     { status: 'fresh', label: 'aktuell' },
@@ -116,10 +125,28 @@ export class MapComponent implements OnDestroy {
     this.saveViewport();
   }
 
-  onGeolocate(position: LocationPosition): void {
-    void this.geolocation.activate(position);
-    if (this.sortOrder() === 'distance') {
-      this.distanceReference = [position.coords.longitude, position.coords.latitude];
+  async centerOnUser(): Promise<void> {
+    if (this.locating()) return;
+    this.locating.set(true);
+    this.locationError.set('');
+    try {
+      const position = await this.geolocation.activate();
+      if (!position) {
+        this.locationError.set('Standort konnte nicht ermittelt werden.');
+        return;
+      }
+      const center: MapCenter = [position.coords.longitude, position.coords.latitude];
+      if (this.sortOrder() === 'distance') this.distanceReference = center;
+      this.map?.flyTo({
+        center,
+        zoom: Math.max(this.map.getZoom(), 14),
+        duration: 1000,
+        essential: true,
+      });
+    } catch {
+      this.locationError.set('Standort konnte nicht ermittelt werden.');
+    } finally {
+      this.locating.set(false);
     }
   }
 

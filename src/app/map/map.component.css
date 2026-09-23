@@ -27,6 +27,10 @@
   gap: 5px;
 }
 
+.map-container {
+  position: relative;
+}
+
 .map {
   display: block;
   height: clamp(280px, 42vh, 420px);
@@ -34,6 +38,19 @@
   border-radius: 18px;
   overflow: hidden;
   background: #d9eaf7;
+}
+
+.map-location-button {
+  position: absolute;
+  z-index: 3;
+  top: 49px;
+  right: 10px;
+  width: 29px;
+  height: 29px;
+  border: 0;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 0 0 2px #0000001a;
 }
 
 .map-legend {

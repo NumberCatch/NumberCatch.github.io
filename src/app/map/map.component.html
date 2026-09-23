@@ -5,74 +5,85 @@
       <h1>Deine Funde</h1>
     </div>
   </div>
-  <mgl-map
-    #map
-    class="map"
-    [mapStyle]="mapStyle"
-    [center]="center()"
-    [zoom]="zoom()"
-    (mapLoad)="onMapLoad($event)"
-    (moveEnd)="onMoveEnd()"
-  >
-    <mgl-control mglNavigation position="top-right" [showCompass]="false" />
-    <mgl-control
-      mglGeolocate
-      position="top-right"
-      [positionOptions]="{ enableHighAccuracy: true }"
-      [showUserLocation]="false"
-      (geolocate)="onGeolocate($event)"
-    />
-    @if (userCoordinates(); as coordinates) {
-      <mgl-marker [lngLat]="coordinates">
-        <div class="user-location-marker" aria-label="Dein Standort"></div>
-      </mgl-marker>
-    }
-    @for (sighting of visibleSightings(); track sighting.id) {
-      @if (sighting.latitude !== null && sighting.longitude !== null) {
-        <mgl-marker [lngLat]="[sighting.longitude, sighting.latitude]" anchor="bottom">
-          <div
-            class="number-marker"
-            [class.selected]="selectedSightingId() === sighting.id"
-            [style.background-color]="statusColor(sighting)"
-            (click)="$event.stopPropagation(); selectFromMarker(sighting)"
-          >
-            {{ sighting.number }}
-          </div>
+  <div class="map-container">
+    <mgl-map
+      #map
+      class="map"
+      [mapStyle]="mapStyle"
+      [center]="center()"
+      [zoom]="zoom()"
+      (mapLoad)="onMapLoad($event)"
+      (moveEnd)="onMoveEnd()"
+    >
+      <mgl-control
+        mglNavigation
+        position="top-right"
+        [showZoom]="false"
+        [showCompass]="true"
+        [visualizePitch]="true"
+      />
+      @if (userCoordinates(); as coordinates) {
+        <mgl-marker [lngLat]="coordinates">
+          <div class="user-location-marker" aria-label="Dein Standort"></div>
         </mgl-marker>
       }
-    }
-    @if (selectedSighting(); as sighting) {
-      @if (sighting.latitude !== null && sighting.longitude !== null) {
-        <mgl-popup
-          [lngLat]="[sighting.longitude, sighting.latitude]"
-          anchor="bottom"
-          [offset]="[0, -42]"
-          [closeOnClick]="false"
-          (popupClose)="closePopup(sighting)"
-        >
-          <div class="map-popup-content">
-            <strong
-              >{{ sighting.number }} ·
-              {{
-                sighting.type === 'confirmed' ? 'Bestätigt' : ageLabel(sighting.created_at)
-              }}</strong
+      @for (sighting of visibleSightings(); track sighting.id) {
+        @if (sighting.latitude !== null && sighting.longitude !== null) {
+          <mgl-marker [lngLat]="[sighting.longitude, sighting.latitude]" anchor="bottom">
+            <div
+              class="number-marker"
+              [class.selected]="selectedSightingId() === sighting.id"
+              [style.background-color]="statusColor(sighting)"
+              (click)="$event.stopPropagation(); selectFromMarker(sighting)"
             >
-            <small>{{ sighting.created_at | date: 'dd.MM.yyyy, HH:mm' }} Uhr</small>
-            @if (sighting.note) {
-              <span>{{ sighting.note }}</span>
-            }
-            <a
-              class="popup-route"
-              [href]="routeUrl(sighting)"
-              target="_blank"
-              rel="noopener noreferrer"
-              >Route planen</a
-            >
-          </div>
-        </mgl-popup>
+              {{ sighting.number }}
+            </div>
+          </mgl-marker>
+        }
       }
-    }
-  </mgl-map>
+      @if (selectedSighting(); as sighting) {
+        @if (sighting.latitude !== null && sighting.longitude !== null) {
+          <mgl-popup
+            [lngLat]="[sighting.longitude, sighting.latitude]"
+            anchor="bottom"
+            [offset]="[0, -42]"
+            [closeOnClick]="false"
+            (popupClose)="closePopup(sighting)"
+          >
+            <div class="map-popup-content">
+              <strong
+                >{{ sighting.number }} ·
+                {{
+                  sighting.type === 'confirmed' ? 'Bestätigt' : ageLabel(sighting.created_at)
+                }}</strong
+              >
+              <small>{{ sighting.created_at | date: 'dd.MM.yyyy, HH:mm' }} Uhr</small>
+              @if (sighting.note) {
+                <span>{{ sighting.note }}</span>
+              }
+              <a
+                class="popup-route"
+                [href]="routeUrl(sighting)"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Route planen</a
+              >
+            </div>
+          </mgl-popup>
+        }
+      }
+    </mgl-map>
+    <button
+      type="button"
+      class="icon-button map-location-button"
+      aria-label="Auf eigenen Standort zentrieren"
+      [attr.aria-busy]="locating()"
+      [disabled]="locating()"
+      (click)="centerOnUser()"
+    >
+      <svg lucideLocateFixed aria-hidden="true"></svg>
+    </button>
+  </div>
   <div class="map-legend">
     @for (option of statusOptions; track option.status) {
       <button
@@ -87,6 +98,9 @@
     }
   </div>
   <p class="muted map-note">Nur du siehst die GPS-Standorte deiner eigenen Funde.</p>
+  @if (locationError()) {
+    <p class="error">{{ locationError() }}</p>
+  }
   @if (loadError()) {
     <p class="error">{{ loadError() }}</p>
   }
