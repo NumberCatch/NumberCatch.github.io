@@ -119,6 +119,7 @@
             [attr.aria-pressed]="gpsOnly()"
             aria-label="Nur Funde mit Standort"
             matTooltip="Nur Funde mit Standort"
+            matTooltipTouchGestures="off"
             (click)="toggleGpsOnly()"
           >
             <svg lucideMapPin aria-hidden="true"></svg>
@@ -171,6 +172,7 @@
               (click)="remove(sighting, $event)"
               aria-label="Vormerkung löschen"
               matTooltip="Vormerkung löschen"
+              matTooltipTouchGestures="off"
             >
               <svg lucideTrash></svg>
             </button>
