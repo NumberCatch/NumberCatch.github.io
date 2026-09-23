@@ -28,6 +28,7 @@ export class SupabaseService {
     if (error) throw error;
     return data as Profile | null;
   }
+
   async ensureProfile(userId: string, displayName: string): Promise<Profile> {
     const existing = await this.profile(userId);
     if (existing) return existing;
@@ -39,6 +40,7 @@ export class SupabaseService {
     if (error) throw error;
     return data as Profile;
   }
+
   async ownSightings(userId: string): Promise<Sighting[]> {
     const cached = this.sightingsCache.get(userId);
     if (cached) return cached;
@@ -52,6 +54,7 @@ export class SupabaseService {
     this.sightingsCache.set(userId, sightings);
     return sightings;
   }
+
   async saveSighting(sighting: NewSighting): Promise<Profile> {
     const { data, error } = await this.client
       .rpc('capture_sighting', {
@@ -68,6 +71,7 @@ export class SupabaseService {
     this.sightingsCache.clear();
     return data;
   }
+
   async groups(userId: string): Promise<PlayerGroup[]> {
     const cached = this.groupsCache.get(userId);
     if (cached) return cached;
@@ -82,6 +86,7 @@ export class SupabaseService {
     this.groupsCache.set(userId, groups);
     return groups;
   }
+
   async createGroup(userId: string, name: string): Promise<PlayerGroup> {
     const { data, error } = await this.client
       .from('groups')
@@ -93,6 +98,7 @@ export class SupabaseService {
     this.groupsCache.delete(userId);
     return data as PlayerGroup;
   }
+
   async joinGroup(groupId: string, userId: string): Promise<void> {
     const { error } = await this.client
       .from('group_members')
@@ -101,6 +107,7 @@ export class SupabaseService {
     this.groupsCache.delete(userId);
     this.membersCache.delete(groupId);
   }
+
   async deleteGroup(groupId: string, userId: string): Promise<void> {
     const { data, error } = await this.client
       .from('groups')
@@ -114,6 +121,7 @@ export class SupabaseService {
     this.groupsCache.delete(userId);
     this.membersCache.delete(groupId);
   }
+
   async members(groupId: string, forceRefresh = false): Promise<GroupMember[]> {
     const cached = this.membersCache.get(groupId);
     if (cached && !forceRefresh) return cached;
@@ -152,6 +160,7 @@ export class SupabaseService {
     this.membersCache.set(groupId, members);
     return members;
   }
+
   async uploadAvatar(userId: string, file: File): Promise<string> {
     const extension = file.name.split('.').pop()?.toLowerCase() ?? 'jpg';
     const path = `${userId}/avatar.${extension}`;
@@ -171,6 +180,7 @@ export class SupabaseService {
     if (!profile) throw new Error('Avatar konnte nicht gespeichert werden.');
     return publicUrl;
   }
+
   async updateProfile(userId: string, displayName: string): Promise<void> {
     const { error } = await this.client
       .from('profiles')
@@ -178,6 +188,7 @@ export class SupabaseService {
       .eq('id', userId);
     if (error) throw error;
   }
+
   async deleteSighting(userId: string, sightingId: string): Promise<void> {
     const { error } = await this.client
       .from('sightings')
@@ -193,6 +204,7 @@ export class SupabaseService {
       );
     }
   }
+
   watchGroupProfiles(groupId: string, onChange: () => void): () => void {
     const topic = `group-profiles-${groupId}`;
     const existing = this.client

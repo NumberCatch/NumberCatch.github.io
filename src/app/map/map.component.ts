@@ -106,22 +106,27 @@ export class MapComponent implements OnDestroy {
     this.gpsOnly.set(preferences.gpsOnly);
     this.sortOrder.set(preferences.sortOrder);
   }
+
   onMapLoad(map: MapLibreMap): void {
     this.map = map;
     void this.load();
   }
+
   onMoveEnd(): void {
     this.saveViewport();
   }
+
   onGeolocate(position: LocationPosition): void {
     void this.geolocation.activate(position);
     if (this.sortOrder() === 'distance') {
       this.distanceReference = [position.coords.longitude, position.coords.latitude];
     }
   }
+
   ngOnDestroy(): void {
     this.map = undefined;
   }
+
   private async load(): Promise<void> {
     const userId = this.auth.profile()?.id;
     if (!userId) return;
@@ -134,6 +139,7 @@ export class MapComponent implements OnDestroy {
       );
     }
   }
+
   focus(sighting: Sighting): void {
     this.selectedSightingId.set(sighting.id);
     this.mapElement?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -145,12 +151,15 @@ export class MapComponent implements OnDestroy {
       essential: true,
     });
   }
+
   selectFromMarker(sighting: Sighting): void {
     this.selectedSightingId.set(sighting.id);
   }
+
   closePopup(sighting: Sighting): void {
     if (this.selectedSightingId() === sighting.id) this.selectedSightingId.set(null);
   }
+
   async remove(sighting: Sighting, event: Event): Promise<void> {
     event.stopPropagation();
     const confirmed = await this.confirm({
@@ -171,15 +180,18 @@ export class MapComponent implements OnDestroy {
       );
     }
   }
+
   ageLabel(date: string): string {
     const days = (Date.now() - Date.parse(date)) / 86400000;
     return days <= 7 ? 'Aktuell' : days <= 30 ? 'Älter' : 'Wahrscheinlich veraltet';
   }
+
   statusClass(sighting: Sighting): SightingStatus {
     if (sighting.type === 'confirmed') return 'confirmed';
     const days = (Date.now() - Date.parse(sighting.created_at)) / 86400000;
     return days <= 7 ? 'fresh' : days <= 30 ? 'old' : 'stale';
   }
+
   visibleSightings(): Sighting[] {
     const visibleStatuses = this.visibleStatuses();
     const currentNumber = this.auth.profile()?.current_number ?? 0;
@@ -201,15 +213,19 @@ export class MapComponent implements OnDestroy {
     }
     return sightings.sort((left, right) => this.compareSightings(left, right));
   }
+
   isStatusVisible(status: SightingStatus): boolean {
     return this.visibleStatuses().has(status);
   }
+
   isView(view: SightingView): boolean {
     return this.view() === view;
   }
+
   viewLabel(): string {
     return this.viewOptions.find((option) => option.view === this.view())?.label ?? 'Alle';
   }
+
   toggleStatus(status: SightingStatus): void {
     const statuses = new Set(this.visibleStatuses());
     if (statuses.has(status)) statuses.delete(status);
@@ -218,16 +234,19 @@ export class MapComponent implements OnDestroy {
     this.saveFilterPreferences();
     this.updateMarkerVisibility();
   }
+
   setView(view: SightingView): void {
     this.view.set(view);
     this.saveFilterPreferences();
     this.updateMarkerVisibility();
   }
+
   toggleGpsOnly(): void {
     this.gpsOnly.update((value) => !value);
     this.saveFilterPreferences();
     this.updateMarkerVisibility();
   }
+
   toggleSort(): void {
     const sortOrders: SightingSort[] = ['number', 'newest', 'distance'];
     const currentIndex = sortOrders.indexOf(this.sortOrder());
@@ -239,6 +258,7 @@ export class MapComponent implements OnDestroy {
     this.saveFilterPreferences();
     this.updateMarkerVisibility();
   }
+
   sortLabel(): string {
     return this.sortOrder() === 'number'
       ? 'Nummer'
@@ -246,11 +266,13 @@ export class MapComponent implements OnDestroy {
         ? 'Neueste'
         : 'Entfernung';
   }
+
   statusColor(sighting: Sighting): string {
     if (sighting.type === 'confirmed') return '#48a868';
     const days = (Date.now() - Date.parse(sighting.created_at)) / 86400000;
     return days <= 7 ? '#ef8354' : days <= 30 ? '#f2c14e' : '#829ab1';
   }
+
   private updateMarkerVisibility(): void {
     const visibleIds = new Set(this.visibleSightings().map((sighting) => sighting.id));
     const selectedId = this.selectedSightingId();
@@ -258,6 +280,7 @@ export class MapComponent implements OnDestroy {
       this.selectedSightingId.set(null);
     }
   }
+
   private loadFilterPreferences(): MapFilterPreferences {
     const defaults = {
       visibleStatuses: this.statusOptions.map((option) => option.status),
@@ -297,6 +320,7 @@ export class MapComponent implements OnDestroy {
       return defaults;
     }
   }
+
   private saveFilterPreferences(): void {
     try {
       window.localStorage.setItem(
@@ -312,6 +336,7 @@ export class MapComponent implements OnDestroy {
       // Local storage may be unavailable in private browsing mode.
     }
   }
+
   private compareSightings(left: Sighting, right: Sighting): number {
     if (this.sortOrder() === 'newest') {
       return Date.parse(right.created_at) - Date.parse(left.created_at);
@@ -322,15 +347,18 @@ export class MapComponent implements OnDestroy {
     }
     return left.number - right.number;
   }
+
   private mapCenter(): MapCenter | undefined {
     if (!this.map) return undefined;
     const center = this.map.getCenter();
     return [center.lng, center.lat];
   }
+
   userCoordinates(): MapCenter | null {
     const position = this.geolocation.position();
     return position ? [position.coords.longitude, position.coords.latitude] : null;
   }
+
   private distance(sighting: Sighting, reference: MapCenter): number {
     if (sighting.latitude === null || sighting.longitude === null) {
       return Number.POSITIVE_INFINITY;
@@ -340,6 +368,7 @@ export class MapComponent implements OnDestroy {
       { latitude: reference[1], longitude: reference[0] },
     );
   }
+
   private loadViewport(): MapViewport {
     const defaultViewport: MapViewport = { center: [10.45, 51.16], zoom: 5 };
     try {
@@ -352,6 +381,7 @@ export class MapComponent implements OnDestroy {
       return defaultViewport;
     }
   }
+
   private saveViewport(): void {
     if (!this.map) return;
     const center = this.map.getCenter();
@@ -365,6 +395,7 @@ export class MapComponent implements OnDestroy {
       // Local storage may be unavailable in private browsing mode.
     }
   }
+
   private isMapViewport(value: unknown): value is MapViewport {
     if (!value || typeof value !== 'object') return false;
     const viewport = value as Partial<MapViewport>;
@@ -385,9 +416,11 @@ export class MapComponent implements OnDestroy {
       viewport.zoom <= 24
     );
   }
+
   routeUrl(sighting: Sighting): string {
     return `https://www.google.com/maps/dir/?api=1&destination=${sighting.latitude},${sighting.longitude}`;
   }
+
   private async confirm(data: ConfirmDialogData): Promise<boolean> {
     return (await firstValueFrom(this.dialog.open(ConfirmDialog, { data }).afterClosed())) === true;
   }

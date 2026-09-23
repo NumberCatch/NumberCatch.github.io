@@ -40,13 +40,16 @@ export class CaptureComponent implements OnInit {
       this.number = routeNumber;
     }
   }
+
   next(): number {
     return (this.auth.profile()?.current_number ?? 0) + 1;
   }
+
   submitFromNumberInput(event: Event): void {
     event.preventDefault();
     void this.submit();
   }
+
   async submit(): Promise<void> {
     if (this.number === null || !this.validNumber() || this.saving()) return;
     const number = this.number;
@@ -124,14 +127,17 @@ export class CaptureComponent implements OnInit {
       this.saving.set(false);
     }
   }
+
   buttonLabel(): string {
     if (!this.validNumber() || this.number === null) return 'Zahl eingeben';
     const kind = this.game.classify(this.auth.profile()?.current_number ?? 0, this.number).kind;
     return kind === 'next' ? 'Bestätigen' : kind === 'hint' ? 'Vormerken' : 'Nachtragen';
   }
+
   validNumber(): boolean {
     return this.number !== null && Number.isSafeInteger(this.number) && this.number >= 1;
   }
+
   locationPreferenceChanged(): void {
     try {
       window.localStorage.setItem(this.locationPreferenceStorageKey, String(this.saveLocation));
@@ -144,6 +150,7 @@ export class CaptureComponent implements OnInit {
       this.locationStatus.set('Standort wird beim Speichern erfasst.');
     }
   }
+
   private loadLocationPreference(): boolean {
     try {
       const stored = window.localStorage.getItem(this.locationPreferenceStorageKey);
@@ -152,6 +159,7 @@ export class CaptureComponent implements OnInit {
       return true;
     }
   }
+
   private async hasNearbyDuplicate(
     userId: string,
     number: number,
@@ -174,6 +182,7 @@ export class CaptureComponent implements OnInit {
       return false;
     }
   }
+
   private async confirm(data: ConfirmDialogData): Promise<boolean> {
     return (await firstValueFrom(this.dialog.open(ConfirmDialog, { data }).afterClosed())) === true;
   }

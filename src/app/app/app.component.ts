@@ -30,9 +30,11 @@ export class AppComponent implements OnInit {
   ngOnInit(): void {
     void this.initialize();
   }
+
   private async initialize(): Promise<void> {
     await this.auth.initialize();
   }
+
   initials(): string {
     const name = this.auth.profile()?.display_name ?? '?';
     return name.slice(0, 2).toUpperCase();

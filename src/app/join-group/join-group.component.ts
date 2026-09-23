@@ -20,6 +20,7 @@ export class JoinGroupComponent implements OnInit {
     this.token = this.route.snapshot.paramMap.get('token') ?? '';
     if (!this.token) this.error.set('Einladungslink ist ungültig.');
   }
+
   async join(): Promise<void> {
     const userId = this.auth.profile()?.id;
     if (!userId || !this.token) return;

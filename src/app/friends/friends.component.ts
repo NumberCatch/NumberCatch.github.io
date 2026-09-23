@@ -29,6 +29,7 @@ export class FriendsComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     await this.load();
   }
+
   async load(): Promise<void> {
     const userId = this.auth.profile()?.id;
     if (!userId) return;
@@ -46,6 +47,7 @@ export class FriendsComponent implements OnInit {
       );
     }
   }
+
   async create(): Promise<void> {
     const userId = this.auth.profile()?.id;
     if (!userId || !this.groupName.trim()) return;
@@ -59,6 +61,7 @@ export class FriendsComponent implements OnInit {
       );
     }
   }
+
   async join(): Promise<void> {
     const userId = this.auth.profile()?.id;
     if (!userId || !this.groupId.trim()) return;
@@ -70,6 +73,7 @@ export class FriendsComponent implements OnInit {
       this.error.set(error instanceof Error ? error.message : 'Beitritt fehlgeschlagen.');
     }
   }
+
   async select(group: PlayerGroup): Promise<void> {
     this.selected.set(group);
     this.inviteMessage.set('');
@@ -87,6 +91,7 @@ export class FriendsComponent implements OnInit {
       );
     }
   }
+
   async copyGroupLink(): Promise<void> {
     const group = this.selected();
     if (!group) return;
@@ -100,6 +105,7 @@ export class FriendsComponent implements OnInit {
       );
     }
   }
+
   async deleteSelected(): Promise<void> {
     const group = this.selected();
     const userId = this.auth.profile()?.id;
@@ -121,12 +127,15 @@ export class FriendsComponent implements OnInit {
       );
     }
   }
+
   private async refreshMembers(groupId: string): Promise<void> {
     this.members.set(await this.supabase.members(groupId, true));
   }
+
   initials(name: string): string {
     return name.slice(0, 2).toUpperCase();
   }
+
   private async confirm(data: ConfirmDialogData): Promise<boolean> {
     return (await firstValueFrom(this.dialog.open(ConfirmDialog, { data }).afterClosed())) === true;
   }

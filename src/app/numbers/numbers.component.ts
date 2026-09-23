@@ -50,12 +50,15 @@ export class NumbersComponent implements OnInit {
       /* The personal overview remains usable when friends are offline. */
     }
   }
+
   next(): number {
     return this.current() + 1;
   }
+
   initials(name = this.auth.profile()?.display_name ?? 'Du'): string {
     return name.slice(0, 2).toUpperCase();
   }
+
   playersAt(number: number): Profile[] {
     const ownProfile = this.profile();
     const players = ownProfile ? [ownProfile, ...this.friends()] : this.friends();

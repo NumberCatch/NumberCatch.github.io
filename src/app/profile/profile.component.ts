@@ -23,9 +23,11 @@ export class ProfileComponent {
   constructor() {
     this.name = this.auth.profile()?.display_name ?? '';
   }
+
   initials(): string {
     return (this.auth.profile()?.display_name ?? 'Du').slice(0, 2).toUpperCase();
   }
+
   async save(): Promise<void> {
     const profile = this.auth.profile();
     if (!profile || !this.name.trim()) return;
@@ -37,6 +39,7 @@ export class ProfileComponent {
       this.message = 'Profil konnte nicht gespeichert werden.';
     }
   }
+
   async upload(event: Event): Promise<void> {
     if (this.uploading()) return;
     const profile = this.auth.profile();
@@ -54,6 +57,7 @@ export class ProfileComponent {
       this.uploading.set(false);
     }
   }
+
   private resizeAvatar(file: File): Promise<File> {
     return new Promise((resolve, reject) => {
       const objectUrl = URL.createObjectURL(file);
@@ -96,6 +100,7 @@ export class ProfileComponent {
       image.src = objectUrl;
     });
   }
+
   async logout(): Promise<void> {
     await this.auth.signOut();
     await this.router.navigateByUrl('/numbers');

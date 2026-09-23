@@ -24,6 +24,7 @@ export class LoginComponent {
     this.error.set('');
     this.message.set('');
   }
+
   async submit(): Promise<void> {
     this.error.set('');
     this.message.set('');

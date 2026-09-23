@@ -9,6 +9,7 @@ export class AuthService {
   private initialization?: Promise<void>;
 
   constructor(private readonly supabase: SupabaseService) {}
+
   async signIn(email: string, password: string): Promise<string | null> {
     const { data, error } = await this.supabase.client.auth.signInWithPassword({ email, password });
     if (error || !data.user) return error?.message ?? 'Anmeldung fehlgeschlagen.';
@@ -22,6 +23,7 @@ export class AuthService {
         : 'Profil konnte nicht geladen werden.';
     }
   }
+
   async signUp(email: string, password: string, name: string): Promise<string | null> {
     const { data, error } = await this.supabase.client.auth.signUp({
       email,
@@ -34,12 +36,14 @@ export class AuthService {
     }
     return error?.message ?? null;
   }
+
   async signOut(): Promise<void> {
     await this.supabase.client.auth.signOut();
     this.supabase.clearCache();
     this.authenticated.set(false);
     this.profile.set(null);
   }
+
   async initialize(): Promise<void> {
     if (!this.initialization) {
       this.initialization = this.loadInitialSession().catch((error: unknown) => {
