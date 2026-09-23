@@ -1,10 +1,10 @@
 # NumberCatch
 
-Mobile-first Angular-PWA für die gemeinsame Suche nach Autonummern in aufsteigender Reihenfolge. Der MVP nutzt Supabase Auth/Postgres/Realtime-fähige Tabellen und MapLibre. Funde werden bei bestehender Internetverbindung direkt in Supabase gespeichert.
+Mobile-first Angular-PWA für die gemeinsame Suche nach Autonummern in aufsteigender Reihenfolge. Die Anwendung nutzt Supabase Auth, Postgres und MapLibre. Funde werden bei bestehender Internetverbindung direkt in Supabase gespeichert.
 
 ## Live-App
 
-[NumberCatch auf GitHub Pages öffnen](https://nini1988.github.io/NumberCatch/)
+[NumberCatch öffnen](https://numbercatch.github.io/)
 
 ## Lokal starten
 
@@ -20,7 +20,6 @@ Die öffentliche Supabase-URL und der Publishable Key stehen in den Angular-Envi
 1. Neues Supabase-Projekt anlegen.
 2. Alle Dateien unter `supabase/migrations/` in aufsteigender Reihenfolge anwenden (SQL Editor oder die bestehende Supabase-GitHub-Integration).
 3. E-Mail-Auth aktivieren und die Site URL auf die GitHub-Pages-URL setzen.
-4. Realtime ist für Profile, Sightings und Gruppenmitgliedschaften in der Migration aktiviert.
 
 Die RLS-Policies erlauben private Sightings nur ihrem Ersteller; Gruppenprofile werden nur über gemeinsame Gruppen sichtbar. Vollständige Kennzeichen werden nicht gespeichert.
 
@@ -47,9 +46,7 @@ Die Frontend-Tests laufen mit Vitest und jsdom. Die Datenbanktests führen die e
 ## GitHub Pages
 
 1. In `Settings → Pages` die Quelle `GitHub Actions` wählen.
-2. Nach dem ersten erfolgreichen Deployment ist die App unter [nini1988.github.io/NumberCatch](https://nini1988.github.io/NumberCatch/) erreichbar.
-3. In Supabase unter `Authentication → URL Configuration` diese URL als Site URL und als erlaubte Redirect-URL eintragen: `https://nini1988.github.io/NumberCatch/`.
+2. Nach dem ersten erfolgreichen Deployment ist die App unter [numbercatch.github.io](https://numbercatch.github.io/) erreichbar.
+3. In Supabase unter `Authentication → URL Configuration` diese URL als Site URL und als erlaubte Redirect-URL eintragen: `https://numbercatch.github.io`.
 
-Der Workflow baut mit dem Repository-Namen als `base-href` und verwendet Hash-Routing. Für dieses Repository wird dadurch automatisch `/NumberCatch/` verwendet.
 
-Kamera/OCR ist über eine spätere `RecognitionService`-Implementierung ergänzbar; der MVP erfasst Zahlen manuell und speichert sie direkt in Supabase.
