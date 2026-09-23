@@ -19,14 +19,17 @@
       mglGeolocate
       position="top-right"
       [positionOptions]="{ enableHighAccuracy: true }"
+      [showUserLocation]="false"
       (geolocate)="onGeolocate($event)"
     />
+    @if (userCoordinates(); as coordinates) {
+      <mgl-marker [lngLat]="coordinates">
+        <div class="user-location-marker" aria-label="Dein Standort"></div>
+      </mgl-marker>
+    }
     @for (sighting of visibleSightings(); track sighting.id) {
       @if (sighting.latitude !== null && sighting.longitude !== null) {
-        <mgl-marker
-          [lngLat]="[sighting.longitude, sighting.latitude]"
-          anchor="bottom"
-        >
+        <mgl-marker [lngLat]="[sighting.longitude, sighting.latitude]" anchor="bottom">
           <div
             class="number-marker"
             [class.selected]="selectedSightingId() === sighting.id"

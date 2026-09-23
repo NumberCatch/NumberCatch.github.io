@@ -6,6 +6,10 @@
   font-size: 0.9rem;
 }
 
+.note-input {
+  resize: vertical;
+}
+
 .result-card {
   margin-top: 22px;
   padding: 20px;

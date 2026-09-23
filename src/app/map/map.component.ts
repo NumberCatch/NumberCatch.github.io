@@ -20,6 +20,7 @@ import { ConfirmDialog, ConfirmDialogData } from '../shared/confirm-dialog/confi
 import { AuthService } from '../services/auth.service';
 import { Sighting } from '../models/models';
 import { SupabaseService } from '../services/supabase.service';
+import { distanceInMeters, GeolocationService, LocationPosition } from '../services/geolocation';
 import { environment } from '../../environments/environment';
 import { LucideArrowDownUp, LucideChevronDown, LucideMapPin, LucideTrash } from '@lucide/angular';
 
@@ -61,10 +62,10 @@ export class MapComponent implements OnDestroy {
   @ViewChild('map', { read: ElementRef }) private mapElement?: ElementRef<HTMLElement>;
   private readonly supabase = inject(SupabaseService);
   private readonly auth = inject(AuthService);
+  readonly geolocation = inject(GeolocationService);
   private readonly dialog = inject(MatDialog);
   private readonly viewportStorageKey = 'number-catch-map-viewport';
   private map?: MapLibreMap;
-  private userLocation?: MapCenter;
   private distanceReference?: MapCenter;
   private readonly filterStorageKey = 'number-catch-map-filters-v2';
   readonly sightings = signal<Sighting[]>([]);
@@ -112,10 +113,10 @@ export class MapComponent implements OnDestroy {
   onMoveEnd(): void {
     this.saveViewport();
   }
-  onGeolocate(event: { coords: { longitude: number; latitude: number } }): void {
-    this.userLocation = [event.coords.longitude, event.coords.latitude];
+  onGeolocate(position: LocationPosition): void {
+    void this.geolocation.activate(position);
     if (this.sortOrder() === 'distance') {
-      this.distanceReference = this.userLocation;
+      this.distanceReference = [position.coords.longitude, position.coords.latitude];
     }
   }
   ngOnDestroy(): void {
@@ -231,7 +232,9 @@ export class MapComponent implements OnDestroy {
     const sortOrders: SightingSort[] = ['number', 'newest', 'distance'];
     const currentIndex = sortOrders.indexOf(this.sortOrder());
     const nextSort = sortOrders[(currentIndex + 1) % sortOrders.length];
-    if (nextSort === 'distance') this.distanceReference = this.userLocation ?? this.mapCenter();
+    if (nextSort === 'distance') {
+      this.distanceReference = this.userCoordinates() ?? this.mapCenter();
+    }
     this.sortOrder.set(nextSort);
     this.saveFilterPreferences();
     this.updateMarkerVisibility();
@@ -324,19 +327,18 @@ export class MapComponent implements OnDestroy {
     const center = this.map.getCenter();
     return [center.lng, center.lat];
   }
+  userCoordinates(): MapCenter | null {
+    const position = this.geolocation.position();
+    return position ? [position.coords.longitude, position.coords.latitude] : null;
+  }
   private distance(sighting: Sighting, reference: MapCenter): number {
     if (sighting.latitude === null || sighting.longitude === null) {
       return Number.POSITIVE_INFINITY;
     }
-    const earthRadiusKm = 6371;
-    const latitude = (sighting.latitude * Math.PI) / 180;
-    const referenceLatitude = (reference[1] * Math.PI) / 180;
-    const latitudeDelta = ((sighting.latitude - reference[1]) * Math.PI) / 180;
-    const longitudeDelta = ((sighting.longitude - reference[0]) * Math.PI) / 180;
-    const value =
-      Math.sin(latitudeDelta / 2) ** 2 +
-      Math.cos(latitude) * Math.cos(referenceLatitude) * Math.sin(longitudeDelta / 2) ** 2;
-    return earthRadiusKm * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
+    return distanceInMeters(
+      { latitude: sighting.latitude, longitude: sighting.longitude },
+      { latitude: reference[1], longitude: reference[0] },
+    );
   }
   private loadViewport(): MapViewport {
     const defaultViewport: MapViewport = { center: [10.45, 51.16], zoom: 5 };

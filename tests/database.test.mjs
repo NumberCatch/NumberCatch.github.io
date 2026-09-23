@@ -90,13 +90,19 @@ test('future confirmations are rejected, repeated hints remain allowed', async (
   assert.equal((await db.query('select * from sightings')).rows.length, 2);
 });
 
-test('hints never auto-complete a number and stale hint requests are rejected', async () => {
+test('past hints are stored without changing progress', async () => {
   await capture(3, 'hint');
   await capture(1, 'confirmed');
   assert.equal((await capture(2, 'confirmed')).current_number, 2);
   await expectError(() => capture(3, 'hint'), 'NC002');
   assert.equal((await capture(3, 'confirmed')).current_number, 3);
-  await expectError(() => capture(3, 'hint'), 'NC001');
+  assert.equal((await capture(3, 'hint')).current_number, 3);
+  assert.equal((await capture(1, 'hint')).current_number, 3);
+  assert.equal(
+    (await db.query("select count(*)::integer as count from sightings where type = 'hint'")).rows[0]
+      .count,
+    3,
+  );
 });
 
 test('a failed profile update also rolls back the sighting insert', async () => {

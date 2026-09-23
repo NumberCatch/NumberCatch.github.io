@@ -2,15 +2,25 @@ import type { MockedObject } from 'vitest';
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
+import { MatDialog } from '@angular/material/dialog';
+import { of } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 import { CaptureComponent } from './capture.component';
-import { Profile } from '../models/models';
+import { Profile, Sighting } from '../models/models';
+import { GeolocationService } from '../services/geolocation';
 import { SupabaseService } from '../services/supabase.service';
+import { ConfirmDialogData } from '../shared/confirm-dialog/confirm-dialog';
+
+interface ConfirmingCapture {
+  confirm(data: ConfirmDialogData): Promise<boolean>;
+}
 
 describe('CaptureComponent', () => {
   let fixture: ComponentFixture<CaptureComponent>;
   let component: CaptureComponent;
-  let supabase: MockedObject<Pick<SupabaseService, 'saveSighting'>>;
+  let supabase: MockedObject<Pick<SupabaseService, 'saveSighting' | 'ownSightings'>>;
+  let geolocation: MockedObject<Pick<GeolocationService, 'activate'>>;
+  let dialog: { open: ReturnType<typeof vi.fn> };
   const initialProfile: Profile = {
     id: 'player',
     display_name: 'Spieler',
@@ -37,20 +47,22 @@ describe('CaptureComponent', () => {
   }
 
   beforeEach(async () => {
-    Object.defineProperty(navigator, 'geolocation', {
-      configurable: true,
-      value: { getCurrentPosition: vi.fn() },
-    });
+    localStorage.removeItem('number-catch-save-location');
     profile.set({ ...initialProfile });
     supabase = {
       saveSighting: vi.fn().mockName('SupabaseService.saveSighting'),
+      ownSightings: vi.fn().mockResolvedValue([]),
     };
+    geolocation = { activate: vi.fn().mockResolvedValue(null) };
+    dialog = { open: vi.fn(() => ({ afterClosed: () => of(true) })) };
     supabase.saveSighting.mockResolvedValue({ ...initialProfile, current_number: 38 });
     await TestBed.configureTestingModule({
       imports: [CaptureComponent],
       providers: [
         { provide: AuthService, useValue: { profile } },
         { provide: SupabaseService, useValue: supabase },
+        { provide: GeolocationService, useValue: geolocation },
+        { provide: MatDialog, useValue: dialog },
         {
           provide: ActivatedRoute,
           useValue: { snapshot: { queryParamMap: convertToParamMap({ number: '38' }) } },
@@ -87,6 +99,7 @@ describe('CaptureComponent', () => {
 
   it('submits instead of moving focus when Enter is pressed in the number input', async () => {
     const input: HTMLInputElement = fixture.nativeElement.querySelector('input[name="number"]');
+    expect(input.getAttribute('enterkeyhint')).toBe('send');
     const event = new KeyboardEvent('keydown', {
       key: 'Enter',
       bubbles: true,
@@ -112,17 +125,28 @@ describe('CaptureComponent', () => {
     expect(profile()?.current_number).toBe(37);
   });
 
-  it('does not save completed numbers or invalid input', async () => {
-    for (const number of [null, 0, -1, 38.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1, 37]) {
+  it('does not save invalid input', async () => {
+    for (const number of [null, 0, -1, 38.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1]) {
       component.number = number;
       await component.submit();
     }
     expect(supabase.saveSighting).not.toHaveBeenCalled();
     expect(profile()?.current_number).toBe(37);
-    fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('.result-card')?.textContent).toContain(
-      '37 ist schon erledigt.',
-    );
+  });
+
+  it('saves a past number as a hint after confirmation', async () => {
+    supabase.saveSighting.mockResolvedValue(initialProfile);
+    component.number = 20;
+    const confirm = vi
+      .spyOn(component as unknown as ConfirmingCapture, 'confirm')
+      .mockResolvedValue(true);
+
+    await component.submit();
+
+    expect(confirm).toHaveBeenCalledOnce();
+    expect(vi.mocked(supabase.saveSighting).mock.lastCall![0].type).toBe('hint');
+    expect(vi.mocked(supabase.saveSighting).mock.lastCall![0].number).toBe(20);
+    expect(profile()?.current_number).toBe(37);
   });
 
   it('shows failures and retains inputs without optimistic progress', async () => {
@@ -177,10 +201,14 @@ describe('CaptureComponent', () => {
 
   it('disables submission and blocks duplicate requests while waiting for GPS', async () => {
     component.saveLocation = true;
-    let completeGps: PositionCallback = () => expect.fail('GPS callback missing');
-    vi.spyOn(navigator.geolocation, 'getCurrentPosition').mockImplementation((success) => {
-      completeGps = success;
-    });
+    let completeGps: (position: GeolocationPosition) => void = () =>
+      expect.fail('GPS callback missing');
+    geolocation.activate.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          completeGps = resolve;
+        }),
+    );
     const submission = component.submit();
     fixture.detectChanges();
     const button: HTMLButtonElement = fixture.nativeElement.querySelector('button[type="submit"]');
@@ -195,36 +223,86 @@ describe('CaptureComponent', () => {
     expect(fixture.nativeElement.querySelector('.loading-spinner')).toBeNull();
   });
 
-  it('requests fresh GPS for each capture and does not reuse it after a GPS failure', async () => {
+  it('uses the shared GPS service for captures', async () => {
     component.saveLocation = true;
-    const gps = vi.spyOn(navigator.geolocation, 'getCurrentPosition').mockReturnValue(undefined);
-    gps.mockImplementation((success) => success(position(50)));
+    geolocation.activate.mockResolvedValueOnce(position(50));
     await component.submit();
     component.number = 39;
-    gps.mockImplementation((success) => success(position(51)));
+    geolocation.activate.mockResolvedValueOnce(position(51));
     await component.submit();
     expect(vi.mocked(supabase.saveSighting).mock.calls[0]![0].latitude).toBe(50);
     expect(vi.mocked(supabase.saveSighting).mock.calls[1]![0].latitude).toBe(51);
     component.number = 52;
-    gps.mockImplementation((_success, failure) =>
-      failure?.({
-        code: 3,
-        message: 'timeout',
-        PERMISSION_DENIED: 1,
-        POSITION_UNAVAILABLE: 2,
-        TIMEOUT: 3,
-      }),
-    );
+    geolocation.activate.mockResolvedValueOnce(null);
     await component.submit();
     expect(vi.mocked(supabase.saveSighting).mock.calls[2]![0].latitude).toBeNull();
     expect(component.locationStatus()).toBe('Ohne Standort gespeichert.');
-    expect(vi.mocked(gps).mock.lastCall![2]?.maximumAge).toBe(0);
   });
 
   it('does not request GPS when location saving is disabled', async () => {
-    const gps = vi.spyOn(navigator.geolocation, 'getCurrentPosition').mockReturnValue(undefined);
     await component.submit();
-    expect(gps).not.toHaveBeenCalled();
+    expect(geolocation.activate).not.toHaveBeenCalled();
     expect(vi.mocked(supabase.saveSighting).mock.lastCall![0].longitude).toBeNull();
   });
+
+  it('asks before saving the same number within 100 metres', async () => {
+    component.saveLocation = true;
+    geolocation.activate.mockResolvedValue(position(50));
+    supabase.ownSightings.mockResolvedValue([sighting(52, 50.0005, 8)]);
+    component.number = 52;
+    const confirm = vi
+      .spyOn(component as unknown as ConfirmingCapture, 'confirm')
+      .mockResolvedValue(true);
+
+    await component.submit();
+
+    expect(confirm).toHaveBeenCalledOnce();
+    expect(supabase.saveSighting).toHaveBeenCalledOnce();
+  });
+
+  it('does not save a nearby duplicate when confirmation is declined', async () => {
+    component.saveLocation = true;
+    geolocation.activate.mockResolvedValue(position(50));
+    supabase.ownSightings.mockResolvedValue([sighting(52, 50.0005, 8)]);
+    component.number = 52;
+    vi.spyOn(component as unknown as ConfirmingCapture, 'confirm').mockResolvedValue(false);
+
+    await component.submit();
+
+    expect(supabase.saveSighting).not.toHaveBeenCalled();
+    expect(component.number).toBe(52);
+  });
+
+  it('stores the location preference without starting GPS', () => {
+    component.saveLocation = true;
+
+    component.locationPreferenceChanged();
+
+    expect(localStorage.getItem('number-catch-save-location')).toBe('true');
+    expect(geolocation.activate).not.toHaveBeenCalled();
+  });
+
+  it('restores the saved location preference without starting GPS', () => {
+    localStorage.setItem('number-catch-save-location', 'false');
+
+    const restored = TestBed.createComponent(CaptureComponent).componentInstance;
+
+    expect(restored.saveLocation).toBe(false);
+    expect(restored.locationStatus()).toBe('Standort wird nicht gespeichert.');
+    expect(geolocation.activate).not.toHaveBeenCalled();
+  });
 });
+
+function sighting(number: number, latitude: number, longitude: number): Sighting {
+  return {
+    id: 'existing',
+    user_id: 'player',
+    number,
+    type: 'hint',
+    latitude,
+    longitude,
+    accuracy: 10,
+    note: null,
+    created_at: '2026-09-23T08:00:00.000Z',
+  };
+}

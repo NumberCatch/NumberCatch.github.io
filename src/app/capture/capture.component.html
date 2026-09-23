@@ -17,7 +17,7 @@
         [disabled]="saving()"
         required
         inputmode="numeric"
-        enterkeyhint="done"
+        enterkeyhint="send"
         (keydown.enter)="submitFromNumberInput($event)"
       />
     </label>
@@ -27,6 +27,7 @@
         name="note"
         [(ngModel)]="note"
         rows="2"
+        class="note-input"
         maxlength="500"
         [disabled]="saving()"
         placeholder="z. B. Parkplatz am Bahnhof"
@@ -62,12 +63,6 @@
   @if (saveMessage()) {
     <div class="result-card good">
       <h2>{{ saveMessage() }}</h2>
-    </div>
-  }
-  @if (result(); as found) {
-    <div class="result-card">
-      <h2>{{ message(found) }}</h2>
-      <p>{{ description(found) }}</p>
     </div>
   }
 </section>

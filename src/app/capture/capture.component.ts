@@ -1,12 +1,16 @@
 import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ActivatedRoute } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../services/auth.service';
-import { CaptureResult, GameService } from '../services/game.service';
+import { GameService } from '../services/game.service';
+import { distanceInMeters, GeolocationService, LocationPosition } from '../services/geolocation';
 import { SupabaseService } from '../services/supabase.service';
+import { ConfirmDialog, ConfirmDialogData } from '../shared/confirm-dialog/confirm-dialog';
 
 @Component({
-  imports: [FormsModule],
+  imports: [FormsModule, MatDialogModule],
   templateUrl: './capture.component.html',
   styleUrl: './capture.component.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -15,15 +19,21 @@ export class CaptureComponent implements OnInit {
   private readonly game = inject(GameService);
   private readonly auth = inject(AuthService);
   private readonly supabase = inject(SupabaseService);
+  private readonly geolocation = inject(GeolocationService);
+  private readonly dialog = inject(MatDialog);
   private readonly route = inject(ActivatedRoute);
-  readonly result = signal<CaptureResult | null>(null);
+  private readonly locationPreferenceStorageKey = 'number-catch-save-location';
+  number: number | null = null;
+  note = '';
+  saveLocation = this.loadLocationPreference();
   readonly saveMessage = signal('');
   readonly saveError = signal('');
   readonly saving = signal(false);
-  readonly locationStatus = signal('Standort wird beim Speichern erfasst.');
-  number: number | null = null;
-  note = '';
-  saveLocation = true;
+  readonly locationStatus = signal(
+    this.saveLocation
+      ? 'Standort wird beim Speichern erfasst.'
+      : 'Standort wird nicht gespeichert.',
+  );
   ngOnInit(): void {
     const routeNumber = Number(this.route.snapshot.queryParamMap.get('number'));
     if (Number.isSafeInteger(routeNumber) && routeNumber >= 1) {
@@ -45,22 +55,43 @@ export class CaptureComponent implements OnInit {
     if (!profile) return;
     this.saveMessage.set('');
     this.saveError.set('');
-    this.result.set(null);
     if (note.length > 500) {
       this.saveError.set('Die Notiz darf höchstens 500 Zeichen enthalten.');
       return;
     }
     const result = this.game.classify(profile.current_number, number);
-    if (result.kind === 'done') {
-      this.result.set(result);
-      return;
-    }
     this.saving.set(true);
     try {
+      if (
+        result.kind === 'past' &&
+        !(await this.confirm({
+          title: 'Vergangene Zahl eintragen?',
+          message: `${number} ist bereits abgeschlossen. Möchtest du sie trotzdem als private Vormerkung speichern?`,
+          confirmLabel: 'Eintragen',
+        }))
+      ) {
+        this.locationStatus.set('Speichern abgebrochen.');
+        return;
+      }
       this.locationStatus.set(
         this.saveLocation ? 'Standort wird erfasst …' : 'Fund wird ohne Standort gespeichert …',
       );
-      const position = this.saveLocation ? await this.capturePosition() : null;
+      const position = this.saveLocation ? await this.geolocation.activate() : null;
+      if (
+        result.kind !== 'next' &&
+        position &&
+        (await this.hasNearbyDuplicate(profile.id, number, position))
+      ) {
+        const saveDuplicate = await this.confirm({
+          title: 'Ähnliche Vormerkung gefunden',
+          message: `Du hast die ${number} bereits in weniger als 100 m Entfernung eingetragen. Möchtest du sie erneut eintragen?`,
+          confirmLabel: 'Trotzdem eintragen',
+        });
+        if (!saveDuplicate) {
+          this.locationStatus.set('Speichern abgebrochen.');
+          return;
+        }
+      }
       this.locationStatus.set('Fund wird gespeichert …');
       const updatedProfile = await this.supabase.saveSighting({
         number,
@@ -76,7 +107,6 @@ export class CaptureComponent implements OnInit {
           ? `${result.number} gespeichert – dein Fortschritt wurde erhöht.`
           : `${result.number} wurde als private Vormerkung gespeichert.`,
       );
-      this.result.set(null);
       this.locationStatus.set(
         position ? 'Mit Standort gespeichert.' : 'Ohne Standort gespeichert.',
       );
@@ -94,51 +124,57 @@ export class CaptureComponent implements OnInit {
       this.saving.set(false);
     }
   }
-  message(result: CaptureResult): string {
-    return result.kind === 'next'
-      ? `${result.number} ist deine nächste Zahl!`
-      : result.kind === 'hint'
-        ? `${result.number} vormerken?`
-        : `${result.number} ist schon erledigt.`;
-  }
-  description(result: CaptureResult): string {
-    return result.kind === 'next'
-      ? `Damit steigt dein Fortschritt auf ${result.number}.`
-      : result.kind === 'hint'
-        ? 'Der Fund wird als private Vormerkung gespeichert.'
-        : 'Diese Zahl ist bereits abgeschlossen.';
-  }
   buttonLabel(): string {
     if (!this.validNumber() || this.number === null) return 'Zahl eingeben';
     const kind = this.game.classify(this.auth.profile()?.current_number ?? 0, this.number).kind;
-    return kind === 'next' ? 'Bestätigen' : kind === 'hint' ? 'Vormerken' : 'Bereits erledigt';
+    return kind === 'next' ? 'Bestätigen' : kind === 'hint' ? 'Vormerken' : 'Nachtragen';
   }
   validNumber(): boolean {
     return this.number !== null && Number.isSafeInteger(this.number) && this.number >= 1;
   }
   locationPreferenceChanged(): void {
+    try {
+      window.localStorage.setItem(this.locationPreferenceStorageKey, String(this.saveLocation));
+    } catch {
+      // The preference remains valid for this app session when local storage is unavailable.
+    }
     if (!this.saveLocation) {
       this.locationStatus.set('Standort wird nicht gespeichert.');
     } else {
       this.locationStatus.set('Standort wird beim Speichern erfasst.');
     }
   }
-  private capturePosition(): Promise<GeolocationPosition | null> {
-    if (!navigator.geolocation) return Promise.resolve(null);
-    return new Promise((resolve) => {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          this.locationStatus.set('Standort erfasst.');
-          resolve(position);
-        },
-        () => {
-          this.locationStatus.set(
-            'Standort nicht verfügbar – Fund kann trotzdem gespeichert werden.',
-          );
-          resolve(null);
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
+  private loadLocationPreference(): boolean {
+    try {
+      const stored = window.localStorage.getItem(this.locationPreferenceStorageKey);
+      return stored === null ? true : stored === 'true';
+    } catch {
+      return true;
+    }
+  }
+  private async hasNearbyDuplicate(
+    userId: string,
+    number: number,
+    position: LocationPosition,
+  ): Promise<boolean> {
+    try {
+      const sightings = await this.supabase.ownSightings(userId);
+      return sightings.some(
+        (sighting) =>
+          sighting.number === number &&
+          sighting.latitude !== null &&
+          sighting.longitude !== null &&
+          distanceInMeters(
+            { latitude: sighting.latitude, longitude: sighting.longitude },
+            position.coords,
+          ) <= 100,
       );
-    });
+    } catch (error) {
+      console.warn('Die lokale Doppelprüfung konnte nicht durchgeführt werden.', error);
+      return false;
+    }
+  }
+  private async confirm(data: ConfirmDialogData): Promise<boolean> {
+    return (await firstValueFrom(this.dialog.open(ConfirmDialog, { data }).afterClosed())) === true;
   }
 }
