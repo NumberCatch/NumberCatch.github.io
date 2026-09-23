@@ -32,7 +32,7 @@ export class NumbersComponent implements OnInit {
     ),
   );
   readonly numbers = computed(() =>
-    Array.from({ length: this.numberLimit() }, (_, index) => index + 1),
+    Array.from({ length: this.numberLimit() + 1 }, (_, index) => index),
   );
   async ngOnInit(): Promise<void> {
     const userId = this.auth.profile()?.id;

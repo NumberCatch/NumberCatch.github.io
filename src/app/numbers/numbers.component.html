@@ -12,13 +12,13 @@
   </a>
   <div class="section-title">
     <h2>Zahlenübersicht</h2>
-    <span class="muted">1–{{ numberLimit() }}</span>
+    <span class="muted">0–{{ numberLimit() }}</span>
   </div>
   <div class="number-grid">
     @for (number of numbers(); track number) {
       <div
         class="number-cell"
-        [class.completed]="number <= current()"
+        [class.completed]="number > 0 && number <= current()"
         [class.next-cell]="number === next()"
       >
         <span class="number-label">{{ number }}</span>
@@ -45,7 +45,7 @@
         @if (number === next()) {
           <small>gesucht</small>
         }
-        @if (number <= current()) {
+        @if (number > 0 && number <= current()) {
           <svg class="check" lucideCheck></svg>
         }
       </div>

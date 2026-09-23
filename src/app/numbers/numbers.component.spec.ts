@@ -6,6 +6,25 @@ import { Profile, PlayerGroup, GroupMember } from '../models/models';
 import { SupabaseService } from '../services/supabase.service';
 
 describe('NumbersComponent group members', () => {
+  it('includes zero and assigns players without progress to it', () => {
+    const own: Profile = { id: 'own', display_name: 'Ich', avatar_url: null, current_number: 0 };
+    const supabase = {
+      groups: vi.fn().mockName('SupabaseService.groups'),
+      members: vi.fn().mockName('SupabaseService.members'),
+    };
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: AuthService, useValue: { profile: signal(own) } },
+        { provide: SupabaseService, useValue: supabase },
+      ],
+    });
+
+    const component = TestBed.runInInjectionContext(() => new NumbersComponent());
+
+    expect(component.numbers()[0]).toBe(0);
+    expect(component.playersAt(0)).toEqual([own]);
+  });
+
   it('shows a friend shared across two groups only once', async () => {
     const own: Profile = { id: 'own', display_name: 'Ich', avatar_url: null, current_number: 3 };
     const friend: Profile = { ...own, id: 'friend', display_name: 'Freund' };
