@@ -78,6 +78,20 @@ describe('MapComponent filters', () => {
       essential: true,
     });
   });
+
+  it('labels the list without a duplicate visible heading', () => {
+    const getContext = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
+    const fixture = TestBed.createComponent(MapComponent);
+    fixture.componentInstance.sightings.set(sightings());
+    fixture.detectChanges();
+
+    const list = fixture.nativeElement.querySelector('.sighting-list');
+    expect(list?.getAttribute('aria-label')).toBe('Fundliste');
+    expect(list?.querySelector('h2')).toBeNull();
+    expect(list?.querySelector('.sighting-list-toolbar')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.map-note')).toBeNull();
+    getContext.mockRestore();
+  });
 });
 
 function sightings(): Sighting[] {

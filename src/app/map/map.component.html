@@ -97,7 +97,6 @@
       </button>
     }
   </div>
-  <p class="muted map-note">Nur du siehst die GPS-Standorte deiner eigenen Funde.</p>
   @if (locationError()) {
     <p class="error">{{ locationError() }}</p>
   }
@@ -105,9 +104,8 @@
     <p class="error">{{ loadError() }}</p>
   }
   @if (sightings().length) {
-    <div class="sighting-list">
-      <div class="sighting-list-heading">
-        <h2>Funde</h2>
+    <section class="sighting-list" aria-label="Fundliste">
+      <div class="sighting-list-toolbar">
         <div class="sighting-actions">
           <button type="button" class="control-button" [matMenuTriggerFor]="viewMenu">
             <span class="view-button-content"
@@ -193,7 +191,7 @@
           }
         </div>
       }
-    </div>
+    </section>
   } @else {
     <div class="empty-state compact">
       <h2>Noch keine Funde</h2>

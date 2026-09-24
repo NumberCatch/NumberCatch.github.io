@@ -136,10 +136,6 @@
   box-shadow: 0 1px 5px #102a4380;
 }
 
-.map-note {
-  font-size: 0.85rem;
-}
-
 .map-popup-content {
   display: grid;
   gap: 5px;
@@ -162,7 +158,7 @@
 }
 
 .sighting-list {
-  margin-top: 28px;
+  margin-top: 16px;
 }
 
 .sighting-row {
@@ -249,16 +245,8 @@
   height: 19px;
 }
 
-.sighting-list-heading {
+.sighting-list-toolbar {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px 16px;
+  justify-content: flex-end;
   margin-bottom: 10px;
-}
-
-.sighting-list h2 {
-  flex: 0 0 auto;
-  margin: 0;
 }
