@@ -22,29 +22,33 @@
         (keydown.enter)="submitFromNumberInput($event)"
       />
     </label>
-    <label>
-      Notiz (optional)
-      <textarea
-        name="note"
-        [(ngModel)]="note"
-        rows="2"
-        class="note-input"
-        maxlength="500"
-        [disabled]="saving()"
-        placeholder="z. B. Parkplatz am Bahnhof"
-      ></textarea>
-      <small class="input-hint">{{ note.length }}/500</small>
-    </label>
-    <label class="location-toggle">
-      <input
-        type="checkbox"
-        name="saveLocation"
-        [(ngModel)]="saveLocation"
-        (ngModelChange)="locationPreferenceChanged()"
-        [disabled]="saving()"
-      />
-      Standort speichern
-    </label>
+    <div class="note-field">
+      <label>
+        Notiz (optional)
+        <textarea
+          name="note"
+          [(ngModel)]="note"
+          rows="2"
+          class="note-input"
+          maxlength="500"
+          [disabled]="saving()"
+          placeholder="z. B. Parkplatz am Bahnhof"
+        ></textarea>
+      </label>
+      <div class="note-options">
+        <small class="input-hint">{{ note.length }}/500</small>
+        <label class="location-toggle">
+          <input
+            type="checkbox"
+            name="saveLocation"
+            [(ngModel)]="saveLocation"
+            (ngModelChange)="locationPreferenceChanged()"
+            [disabled]="saving()"
+          />
+          Standort speichern
+        </label>
+      </div>
+    </div>
     <button
       class="primary full"
       type="submit"

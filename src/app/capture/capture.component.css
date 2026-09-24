@@ -2,6 +2,23 @@
   resize: vertical;
 }
 
+.note-field {
+  display: grid;
+  gap: 7px;
+}
+
+.note-options {
+  display: flex;
+  flex-direction: row-reverse;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+.note-options .location-toggle {
+  margin-right: auto;
+}
+
 .next-number {
   scroll-margin-top: 12px;
 }

@@ -314,6 +314,21 @@ describe('CaptureComponent', () => {
     expect(geolocation.activate).not.toHaveBeenCalled();
   });
 
+  it('keeps the note count and location option usable in their shared row', () => {
+    component.note = 'Bahnhof';
+    fixture.detectChanges();
+    const options: HTMLElement = fixture.nativeElement.querySelector('.note-options');
+    const checkbox: HTMLInputElement = options.querySelector('input[name="saveLocation"]')!;
+    const initiallyChecked = checkbox.checked;
+
+    expect(options.textContent).toContain('7/500');
+    expect(options.textContent).toContain('Standort speichern');
+    expect(options.firstElementChild?.textContent).toContain('7/500');
+    checkbox.click();
+
+    expect(component.saveLocation).toBe(!initiallyChecked);
+  });
+
   it('restores the saved location preference without starting GPS', () => {
     localStorage.setItem('number-catch-save-location', 'false');
 
