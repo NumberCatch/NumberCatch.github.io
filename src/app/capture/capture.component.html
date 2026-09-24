@@ -1,7 +1,7 @@
 <section class="page narrow">
   <p class="eyebrow">NEUER FUND</p>
   <h1>Kennzeichen erfassen</h1>
-  <p class="muted">
+  <p #nextNumber class="muted next-number">
     Deine nächste Zahl ist <strong>{{ next() }}</strong
     >.
   </p>
@@ -18,6 +18,7 @@
         required
         inputmode="numeric"
         enterkeyhint="send"
+        (focus)="scrollNextNumberIntoView($event, nextNumber)"
         (keydown.enter)="submitFromNumberInput($event)"
       />
     </label>

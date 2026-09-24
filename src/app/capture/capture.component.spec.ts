@@ -113,6 +113,38 @@ describe('CaptureComponent', () => {
     expect(supabase.saveSighting).toHaveBeenCalledTimes(1);
   });
 
+  it('keeps the next number visible when the number input gets focus', () => {
+    vi.useFakeTimers();
+    const input: HTMLInputElement = fixture.nativeElement.querySelector('input[name="number"]');
+    const nextNumber: HTMLElement = fixture.nativeElement.querySelector('.next-number');
+    nextNumber.scrollIntoView = vi.fn();
+
+    input.focus();
+    vi.advanceTimersByTime(300);
+
+    expect(nextNumber.scrollIntoView).toHaveBeenCalledWith({
+      behavior: 'smooth',
+      block: 'start',
+      inline: 'nearest',
+    });
+    vi.useRealTimers();
+  });
+
+  it('does not scroll back up when the number input is focused further down the page', () => {
+    vi.useFakeTimers();
+    const scrollPosition = vi.spyOn(window, 'scrollY', 'get').mockReturnValue(100);
+    const input: HTMLInputElement = fixture.nativeElement.querySelector('input[name="number"]');
+    const nextNumber: HTMLElement = fixture.nativeElement.querySelector('.next-number');
+    nextNumber.scrollIntoView = vi.fn();
+
+    input.focus();
+    vi.advanceTimersByTime(300);
+
+    expect(nextNumber.scrollIntoView).not.toHaveBeenCalled();
+    scrollPosition.mockRestore();
+    vi.useRealTimers();
+  });
+
   it('allows repeated future hints without increasing progress', async () => {
     supabase.saveSighting.mockResolvedValue(initialProfile);
     for (let attempt = 0; attempt < 2; attempt++) {
