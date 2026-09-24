@@ -8,6 +8,7 @@ export class SupabaseService {
   readonly client: SupabaseClient = createClient(
     environment.supabaseUrl || 'https://placeholder.supabase.co',
     environment.supabasePublishableKey || 'placeholder',
+    { auth: { experimental: { passkey: true } } },
   );
   private readonly sightingsCache = new Map<string, Sighting[]>();
   private readonly groupsCache = new Map<string, PlayerGroup[]>();

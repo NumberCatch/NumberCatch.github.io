@@ -6,9 +6,14 @@ import { Profile } from '../models/models';
 export class AuthService {
   readonly profile = signal<Profile | null>(null);
   readonly authenticated = signal(false);
+  readonly passwordRecovery = signal(false);
   private initialization?: Promise<void>;
 
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(private readonly supabase: SupabaseService) {
+    this.supabase.client.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') this.passwordRecovery.set(true);
+    });
+  }
 
   async signIn(email: string, password: string): Promise<string | null> {
     const { data, error } = await this.supabase.client.auth.signInWithPassword({ email, password });
@@ -22,6 +27,41 @@ export class AuthService {
         ? profileError.message
         : 'Profil konnte nicht geladen werden.';
     }
+  }
+
+  async signInWithPasskey(signal: AbortSignal): Promise<string | null> {
+    try {
+      const { data, error } = await this.supabase.client.auth.signInWithPasskey({
+        options: { mediation: 'conditional', signal },
+      });
+      if (error || !data?.user) return error?.message ?? 'Anmeldung fehlgeschlagen.';
+      this.profile.set(await this.supabase.ensureProfile(data.user.id, 'Spieler'));
+      this.authenticated.set(true);
+      return null;
+    } catch (error) {
+      return error instanceof Error ? error.message : 'Passkey-Anmeldung fehlgeschlagen.';
+    }
+  }
+
+  async requestPasswordReset(email: string): Promise<string | null> {
+    const redirectTo = `${window.location.origin}${window.location.pathname}`;
+    const { error } = await this.supabase.client.auth.resetPasswordForEmail(email, { redirectTo });
+    return error?.message ?? null;
+  }
+
+  async changePassword(password: string, currentPassword?: string): Promise<string | null> {
+    if (currentPassword !== undefined) {
+      const { data, error } = await this.supabase.client.auth.getUser();
+      if (error || !data.user?.email) return 'Konto konnte nicht geprüft werden.';
+      const verification = await this.supabase.client.auth.signInWithPassword({
+        email: data.user.email,
+        password: currentPassword,
+      });
+      if (verification.error) return 'Bisheriges Passwort ist falsch.';
+    }
+    const { error } = await this.supabase.client.auth.updateUser({ password });
+    if (!error) this.passwordRecovery.set(false);
+    return error?.message ?? null;
   }
 
   async signUp(email: string, password: string, name: string): Promise<string | null> {
@@ -42,6 +82,7 @@ export class AuthService {
     this.supabase.clearCache();
     this.authenticated.set(false);
     this.profile.set(null);
+    this.passwordRecovery.set(false);
   }
 
   async initialize(): Promise<void> {

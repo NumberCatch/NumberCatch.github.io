@@ -18,7 +18,13 @@
     }
     <label>
       E-Mail
-      <input type="email" name="email" [(ngModel)]="email" required autocomplete="email" />
+      <input
+        type="email"
+        name="email"
+        [(ngModel)]="email"
+        required
+        [autocomplete]="registerMode() ? 'email' : 'username webauthn'"
+      />
     </label>
     <label>
       Passwort
@@ -28,10 +34,10 @@
         [(ngModel)]="password"
         required
         minlength="8"
-        autocomplete="new-password"
+        [autocomplete]="registerMode() ? 'new-password' : 'current-password'"
       />
     </label>
-    <button class="primary full" type="submit">
+    <button class="primary full" type="submit" [disabled]="busy()">
       {{ registerMode() ? 'Konto erstellen' : 'Einloggen' }}
     </button>
     @if (message()) {
@@ -44,4 +50,9 @@
   <button class="text-button" type="button" (click)="toggleMode()">
     {{ registerMode() ? 'Schon registriert? Einloggen' : 'Noch kein Konto? Registrieren' }}
   </button>
+  @if (!registerMode()) {
+    <a class="text-button forgot-password-link" routerLink="/forgot-password"
+      >Passwort vergessen?</a
+    >
+  }
 </section>

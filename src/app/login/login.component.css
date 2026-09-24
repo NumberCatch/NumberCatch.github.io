@@ -29,5 +29,11 @@
 }
 
 .auth-page .text-button {
-  margin-top: 20px;
+  display: block;
+  margin: 20px auto 0;
+  text-decoration: none;
+}
+
+.auth-page .forgot-password-link {
+  margin-top: 12px;
 }

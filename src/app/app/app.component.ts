@@ -1,5 +1,5 @@
-import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Component, OnInit, inject, ChangeDetectionStrategy, effect } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import {
   LucideGrid3x3,
@@ -27,6 +27,12 @@ import {
 })
 export class AppComponent implements OnInit {
   readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+  constructor() {
+    effect(() => {
+      if (this.auth.passwordRecovery()) void this.router.navigateByUrl('/change-password');
+    });
+  }
   ngOnInit(): void {
     void this.initialize();
   }

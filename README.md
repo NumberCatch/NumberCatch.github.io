@@ -47,6 +47,4 @@ Die Frontend-Tests laufen mit Vitest und jsdom. Die Datenbanktests führen die e
 
 1. In `Settings → Pages` die Quelle `GitHub Actions` wählen.
 2. Nach dem ersten erfolgreichen Deployment ist die App unter [numbercatch.github.io](https://numbercatch.github.io/) erreichbar.
-3. In Supabase unter `Authentication → URL Configuration` diese URL als Site URL und als erlaubte Redirect-URL eintragen: `https://numbercatch.github.io`.
-
-
+3. In Supabase unter `Authentication → URL Configuration` `https://numbercatch.github.io/` als Site URL und erlaubte Redirect-URL eintragen. Für Passwort-Reset-Tests am lokalen Entwicklungsserver zusätzlich `http://localhost:4200/` als erlaubte Redirect-URL hinzufügen.
