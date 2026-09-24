@@ -1,0 +1,39 @@
+<section class="page narrow">
+  <h1>Passkeys</h1>
+  <p class="muted">Melde dich ohne Passwort mit deinem Gerät an.</p>
+  <div class="passkey-card">
+    @for (passkey of passkeys(); track passkey.id) {
+    <div class="passkey-entry">
+      <label>
+        Name
+        <input [(ngModel)]="passkey.name" maxlength="120" />
+      </label>
+      <div class="passkey-actions">
+        <button
+          class="secondary"
+          type="button"
+          [disabled]="passkeyBusy()"
+          (click)="renamePasskey(passkey)"
+        >
+          Umbenennen
+        </button>
+        <button
+          class="danger-button"
+          type="button"
+          [disabled]="passkeyBusy()"
+          (click)="deletePasskey(passkey)"
+        >
+          Löschen
+        </button>
+      </div>
+    </div>
+    }
+    <button class="primary full" type="button" [disabled]="passkeyBusy()" (click)="addPasskey()">
+      Passkey hinzufügen
+    </button>
+    @if (passkeyMessage()) {
+    <p class="muted">{{ passkeyMessage() }}</p>
+    }
+  </div>
+  <a routerLink="/profile">Zurück zum Profil</a>
+</section>

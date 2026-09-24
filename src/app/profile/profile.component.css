@@ -37,16 +37,3 @@
 .upload-label input {
   display: none;
 }
-
-.passkey-entry {
-  display: grid;
-  gap: 10px;
-  text-align: left;
-}
-.passkey-actions {
-  display: flex;
-  gap: 8px;
-}
-.passkey-actions button {
-  flex: 1;
-}

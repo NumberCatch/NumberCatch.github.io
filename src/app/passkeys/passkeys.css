@@ -1,0 +1,26 @@
+.passkey-card {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 4px 16px #102a4312;
+  margin: 22px 0 18px;
+}
+
+.passkey-entry {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid #d9eaf7;
+  border-radius: 12px;
+}
+
+.passkey-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.passkey-actions button {
+  flex: 1;
+}
