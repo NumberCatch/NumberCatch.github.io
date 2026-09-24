@@ -10,6 +10,7 @@ import { Map as MapLibreMap } from 'maplibre-gl';
 describe('MapComponent filters', () => {
   let currentPosition: ReturnType<typeof signal<LocationPosition | null>>;
   let activate: ReturnType<typeof vi.fn>;
+  let ownSightings: ReturnType<typeof vi.fn>;
   const profile: Profile = {
     id: 'player',
     display_name: 'Spieler',
@@ -20,13 +21,14 @@ describe('MapComponent filters', () => {
   beforeEach(() => {
     currentPosition = signal<LocationPosition | null>(null);
     activate = vi.fn();
+    ownSightings = vi.fn().mockResolvedValue([]);
     localStorage.removeItem('number-catch-map-filters-v2');
     TestBed.configureTestingModule({
       providers: [
         { provide: AuthService, useValue: { profile: signal<Profile | null>(profile) } },
         {
           provide: SupabaseService,
-          useValue: { ownSightings: vi.fn().mockResolvedValue([]) },
+          useValue: { ownSightings },
         },
         {
           provide: GeolocationService,
@@ -34,6 +36,14 @@ describe('MapComponent filters', () => {
         },
       ],
     });
+  });
+
+  it('loads sightings before the map is ready', () => {
+    const component = TestBed.runInInjectionContext(() => new MapComponent());
+
+    component.ngOnInit();
+
+    expect(ownSightings).toHaveBeenCalledWith('player');
   });
 
   it('keeps the same next five numbers when the sort order changes', () => {

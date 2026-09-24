@@ -4,6 +4,7 @@ import {
   computed,
   ElementRef,
   OnDestroy,
+  OnInit,
   ViewChild,
   inject,
   signal,
@@ -65,7 +66,7 @@ interface MapViewport {
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './map.component.html',
 })
-export class MapComponent implements OnDestroy {
+export class MapComponent implements OnInit, OnDestroy {
   @ViewChild('map', { read: ElementRef }) private mapElement?: ElementRef<HTMLElement>;
   private readonly supabase = inject(SupabaseService);
   private readonly auth = inject(AuthService);
@@ -118,6 +119,9 @@ export class MapComponent implements OnDestroy {
 
   onMapLoad(map: MapLibreMap): void {
     this.map = map;
+  }
+
+  ngOnInit(): void {
     void this.load();
   }
 
