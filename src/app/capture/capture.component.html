@@ -45,7 +45,6 @@
       />
       Standort speichern
     </label>
-    <div class="location-status" role="status">{{ locationStatus() }}</div>
     <button
       class="primary full"
       type="submit"
@@ -55,7 +54,9 @@
       @if (saving()) {
         <span class="loading-spinner" aria-label="Speichern läuft"></span>
       }
-      {{ saving() ? 'Wird gespeichert…' : buttonLabel() }}
+      {{
+        saving() ? (locating() ? 'Standort wird erfasst …' : 'Wird gespeichert…') : buttonLabel()
+      }}
     </button>
   </form>
   @if (saveError()) {

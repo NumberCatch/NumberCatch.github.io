@@ -29,11 +29,7 @@ export class CaptureComponent implements OnInit {
   readonly saveMessage = signal('');
   readonly saveError = signal('');
   readonly saving = signal(false);
-  readonly locationStatus = signal(
-    this.saveLocation
-      ? 'Standort wird beim Speichern erfasst.'
-      : 'Standort wird nicht gespeichert.',
-  );
+  readonly locating = signal(false);
   ngOnInit(): void {
     const routeNumber = Number(this.route.snapshot.queryParamMap.get('number'));
     if (Number.isSafeInteger(routeNumber) && routeNumber >= 1) {
@@ -83,13 +79,11 @@ export class CaptureComponent implements OnInit {
           confirmLabel: 'Eintragen',
         }))
       ) {
-        this.locationStatus.set('Speichern abgebrochen.');
         return;
       }
-      this.locationStatus.set(
-        this.saveLocation ? 'Standort wird erfasst …' : 'Fund wird ohne Standort gespeichert …',
-      );
+      this.locating.set(this.saveLocation);
       const position = this.saveLocation ? await this.geolocation.activate() : null;
+      this.locating.set(false);
       if (
         result.kind !== 'next' &&
         position &&
@@ -101,11 +95,9 @@ export class CaptureComponent implements OnInit {
           confirmLabel: 'Trotzdem eintragen',
         });
         if (!saveDuplicate) {
-          this.locationStatus.set('Speichern abgebrochen.');
           return;
         }
       }
-      this.locationStatus.set('Fund wird gespeichert …');
       const updatedProfile = await this.supabase.saveSighting({
         number,
         type: result.kind === 'next' ? 'confirmed' : 'hint',
@@ -115,13 +107,14 @@ export class CaptureComponent implements OnInit {
         note: note || null,
       });
       this.auth.profile.set(updatedProfile);
-      this.saveMessage.set(
+      const saveSummary =
         result.kind === 'next'
-          ? `${result.number} gespeichert – dein Fortschritt wurde erhöht.`
-          : `${result.number} wurde als private Vormerkung gespeichert.`,
-      );
-      this.locationStatus.set(
-        position ? 'Mit Standort gespeichert.' : 'Ohne Standort gespeichert.',
+          ? `${result.number} gespeichert - dein Fortschritt wurde erhöht.`
+          : `${result.number} wurde als private Vormerkung gespeichert.`;
+      this.saveMessage.set(
+        this.saveLocation && !position
+          ? `${saveSummary} Standort konnte nicht erfasst werden.`
+          : saveSummary,
       );
       this.number = null;
       this.note = '';
@@ -132,8 +125,8 @@ export class CaptureComponent implements OnInit {
           ? 'Dein Fortschritt hat sich geändert. Bitte lade die Seite neu und prüfe die Zahl.'
           : 'Speichern konnte nicht bestätigt werden. Bitte prüfe deine Verbindung und lade die Funde neu, bevor du es erneut versuchst.',
       );
-      this.locationStatus.set('Speichern beendet.');
     } finally {
+      this.locating.set(false);
       this.saving.set(false);
     }
   }
@@ -153,11 +146,6 @@ export class CaptureComponent implements OnInit {
       window.localStorage.setItem(this.locationPreferenceStorageKey, String(this.saveLocation));
     } catch {
       // The preference remains valid for this app session when local storage is unavailable.
-    }
-    if (!this.saveLocation) {
-      this.locationStatus.set('Standort wird nicht gespeichert.');
-    } else {
-      this.locationStatus.set('Standort wird beim Speichern erfasst.');
     }
   }
 

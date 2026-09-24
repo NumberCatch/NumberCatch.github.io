@@ -245,7 +245,7 @@ describe('CaptureComponent', () => {
     fixture.detectChanges();
     const button: HTMLButtonElement = fixture.nativeElement.querySelector('button[type="submit"]');
     expect(button.disabled).toBe(true);
-    expect(component.locationStatus()).toContain('Standort wird erfasst');
+    expect(button.textContent).toContain('Standort wird erfasst');
     expect(fixture.nativeElement.querySelector('.loading-spinner')).not.toBeNull();
     await component.submit();
     completeGps(position(50));
@@ -268,7 +268,7 @@ describe('CaptureComponent', () => {
     geolocation.activate.mockResolvedValueOnce(null);
     await component.submit();
     expect(vi.mocked(supabase.saveSighting).mock.calls[2]![0].latitude).toBeNull();
-    expect(component.locationStatus()).toBe('Ohne Standort gespeichert.');
+    expect(component.saveMessage()).toContain('Standort konnte nicht erfasst werden.');
   });
 
   it('does not request GPS when location saving is disabled', async () => {
@@ -320,7 +320,6 @@ describe('CaptureComponent', () => {
     const restored = TestBed.createComponent(CaptureComponent).componentInstance;
 
     expect(restored.saveLocation).toBe(false);
-    expect(restored.locationStatus()).toBe('Standort wird nicht gespeichert.');
     expect(geolocation.activate).not.toHaveBeenCalled();
   });
 });
