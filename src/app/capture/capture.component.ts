@@ -46,13 +46,14 @@ export class CaptureComponent implements OnInit {
     void this.submit();
   }
 
-  scrollNextNumberIntoView(event: FocusEvent, nextNumber: HTMLElement): void {
+  scrollPastHeader(event: FocusEvent): void {
     const input = event.currentTarget;
     if (!(input instanceof HTMLInputElement) || window.scrollY > 24) return;
 
     window.setTimeout(() => {
       if (document.activeElement !== input) return;
-      nextNumber.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+      const header = document.querySelector<HTMLElement>('.topbar');
+      if (header) window.scrollTo({ top: header.offsetHeight, behavior: 'smooth' });
     }, 300);
   }
 

@@ -113,20 +113,21 @@ describe('CaptureComponent', () => {
     expect(supabase.saveSighting).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps the next number visible when the number input gets focus', () => {
+  it('scrolls past the app header when the number input gets focus', () => {
     vi.useFakeTimers();
+    const header = document.createElement('header');
+    header.className = 'topbar';
+    Object.defineProperty(header, 'offsetHeight', { value: 72 });
+    document.body.append(header);
     const input: HTMLInputElement = fixture.nativeElement.querySelector('input[name="number"]');
-    const nextNumber: HTMLElement = fixture.nativeElement.querySelector('.next-number');
-    nextNumber.scrollIntoView = vi.fn();
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
 
     input.focus();
     vi.advanceTimersByTime(300);
 
-    expect(nextNumber.scrollIntoView).toHaveBeenCalledWith({
-      behavior: 'smooth',
-      block: 'start',
-      inline: 'nearest',
-    });
+    expect(scrollTo).toHaveBeenCalledWith({ top: 72, behavior: 'smooth' });
+    header.remove();
+    scrollTo.mockRestore();
     vi.useRealTimers();
   });
 
@@ -134,13 +135,13 @@ describe('CaptureComponent', () => {
     vi.useFakeTimers();
     const scrollPosition = vi.spyOn(window, 'scrollY', 'get').mockReturnValue(100);
     const input: HTMLInputElement = fixture.nativeElement.querySelector('input[name="number"]');
-    const nextNumber: HTMLElement = fixture.nativeElement.querySelector('.next-number');
-    nextNumber.scrollIntoView = vi.fn();
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
 
     input.focus();
     vi.advanceTimersByTime(300);
 
-    expect(nextNumber.scrollIntoView).not.toHaveBeenCalled();
+    expect(scrollTo).not.toHaveBeenCalled();
+    scrollTo.mockRestore();
     scrollPosition.mockRestore();
     vi.useRealTimers();
   });
