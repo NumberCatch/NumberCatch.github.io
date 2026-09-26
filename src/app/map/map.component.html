@@ -22,11 +22,6 @@
         [showCompass]="true"
         [visualizePitch]="true"
       />
-      @if (userCoordinates(); as coordinates) {
-        <mgl-marker [lngLat]="coordinates">
-          <div class="user-location-marker" aria-label="Dein Standort"></div>
-        </mgl-marker>
-      }
       @for (sighting of visibleSightings(); track sighting.id) {
         @if (sighting.latitude !== null && sighting.longitude !== null) {
           <mgl-marker [lngLat]="[sighting.longitude, sighting.latitude]" anchor="bottom">
@@ -40,6 +35,11 @@
             </div>
           </mgl-marker>
         }
+      }
+      @if (userCoordinates(); as coordinates) {
+        <mgl-marker [lngLat]="coordinates" className="user-location-marker-layer">
+          <div class="user-location-marker" aria-label="Dein Standort"></div>
+        </mgl-marker>
       }
       @if (selectedSighting(); as sighting) {
         @if (sighting.latitude !== null && sighting.longitude !== null) {

@@ -292,6 +292,11 @@ form {
   color: #1f7a50;
 }
 
+.user-location-marker-layer {
+  z-index: 1;
+  pointer-events: none;
+}
+
 .app-version {
   margin: 28px 0 0;
   color: var(--muted);
