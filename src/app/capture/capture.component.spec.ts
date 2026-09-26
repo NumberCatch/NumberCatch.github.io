@@ -303,7 +303,7 @@ describe('CaptureComponent', () => {
     await component.submit();
 
     expect(supabase.saveSighting).not.toHaveBeenCalled();
-    expect(component.number).toBe(52);
+    expect(component.number).toBeNull();
   });
 
   it('stores the location preference without starting GPS', () => {
