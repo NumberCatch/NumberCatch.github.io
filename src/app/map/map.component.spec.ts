@@ -1,7 +1,7 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { AuthService } from '../services/auth.service';
-import { MapComponent } from './map.component';
+import { MapComponent, restackMarkers } from './map.component';
 import { Profile, Sighting } from '../models/models';
 import { SupabaseService } from '../services/supabase.service';
 import { GeolocationService, LocationPosition } from '../services/geolocation';
@@ -101,6 +101,49 @@ describe('MapComponent filters', () => {
     expect(list?.querySelector('.sighting-list-toolbar')).not.toBeNull();
     expect(fixture.nativeElement.querySelector('.map-note')).toBeNull();
     getContext.mockRestore();
+  });
+});
+
+describe('restackMarkers', () => {
+  it('puts the first list entry last in the DOM so it paints on top', () => {
+    const parent = document.createElement('div');
+    const first = document.createElement('span');
+    const second = document.createElement('span');
+    parent.append(first, second);
+
+    restackMarkers([first, second]);
+
+    expect([...parent.children]).toEqual([second, first]);
+  });
+
+  it('leaves the DOM untouched when the order already matches', () => {
+    const parent = document.createElement('div');
+    const first = document.createElement('span');
+    const second = document.createElement('span');
+    parent.append(second, first);
+    const observer = new MutationObserver(() => undefined);
+    observer.observe(parent, { childList: true });
+
+    restackMarkers([first, second]);
+    const mutations = observer.takeRecords();
+    observer.disconnect();
+
+    expect(mutations).toEqual([]);
+    expect([...parent.children]).toEqual([second, first]);
+  });
+
+  it('ignores markers that live in different parents', () => {
+    const parent = document.createElement('div');
+    const other = document.createElement('div');
+    const first = document.createElement('span');
+    const second = document.createElement('span');
+    parent.appendChild(first);
+    other.appendChild(second);
+
+    restackMarkers([first, second]);
+
+    expect(first.parentElement).toBe(parent);
+    expect(second.parentElement).toBe(other);
   });
 });
 

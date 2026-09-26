@@ -1,17 +1,19 @@
 import { CommonModule } from '@angular/common';
 import {
+  afterEveryRender,
   Component,
   computed,
   ElementRef,
   OnDestroy,
   OnInit,
+  viewChildren,
   ViewChild,
   inject,
   signal,
   ChangeDetectionStrategy,
 } from '@angular/core';
 import { Map as MapLibreMap } from 'maplibre-gl';
-import { NgxMapLibreGLModule } from '@maplibre/ngx-maplibre-gl';
+import { MarkerComponent, NgxMapLibreGLModule } from '@maplibre/ngx-maplibre-gl';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -68,6 +70,7 @@ interface MapViewport {
 })
 export class MapComponent implements OnInit, OnDestroy {
   @ViewChild('map', { read: ElementRef }) private mapElement?: ElementRef<HTMLElement>;
+  private readonly markerComponents = viewChildren(MarkerComponent);
   private readonly supabase = inject(SupabaseService);
   private readonly auth = inject(AuthService);
   readonly geolocation = inject(GeolocationService);
@@ -115,6 +118,19 @@ export class MapComponent implements OnInit, OnDestroy {
     this.view.set(preferences.view);
     this.gpsOnly.set(preferences.gpsOnly);
     this.sortOrder.set(preferences.sortOrder);
+    // MapLibre appends marker elements to the canvas container in creation order, so
+    // the last rendered marker paints on top. Restack them after every render, once the
+    // child markers have mounted, so the map matches the list order.
+    afterEveryRender(() => {
+      queueMicrotask(() => this.restackMarkers());
+    });
+  }
+
+  private restackMarkers(): void {
+    const elements = this.markerComponents()
+      .map((component) => component.markerInstance()?.getElement())
+      .filter((element): element is HTMLElement => element !== undefined);
+    restackMarkers(elements);
   }
 
   onMapLoad(map: MapLibreMap): void {
@@ -455,4 +471,20 @@ export class MapComponent implements OnInit, OnDestroy {
   private async confirm(data: ConfirmDialogData): Promise<boolean> {
     return (await firstValueFrom(this.dialog.open(ConfirmDialog, { data }).afterClosed())) === true;
   }
+}
+
+export function restackMarkers(elements: HTMLElement[]): void {
+  if (elements.length < 2) return;
+  const parent = elements[0].parentElement;
+  if (!parent || elements.some((element) => element.parentElement !== parent)) return;
+  // The first list entry must be the parent's last child to paint on top.
+  const expected = [...elements].reverse();
+  const current = [...parent.children].filter((child) => elements.includes(child as HTMLElement));
+  if (
+    current.length === expected.length &&
+    current.every((child, index) => child === expected[index])
+  ) {
+    return;
+  }
+  for (const element of expected) parent.appendChild(element);
 }
