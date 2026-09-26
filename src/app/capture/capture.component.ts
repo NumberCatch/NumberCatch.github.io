@@ -80,6 +80,8 @@ export class CaptureComponent implements OnInit {
           confirmLabel: 'Eintragen',
         }))
       ) {
+        this.number = null;
+        this.note = '';
         return;
       }
       this.locating.set(this.saveLocation);
@@ -96,6 +98,8 @@ export class CaptureComponent implements OnInit {
           confirmLabel: 'Trotzdem eintragen',
         });
         if (!saveDuplicate) {
+          this.number = null;
+          this.note = '';
           return;
         }
       }
