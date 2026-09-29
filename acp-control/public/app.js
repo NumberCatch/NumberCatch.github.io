@@ -344,7 +344,6 @@ function showAuth() {
     btn.onclick = () => {
       addMessage('system', `Starte Login: ${method.name || method.id} …`);
       sendWs({ type: 'authenticate', methodId: method.id });
-      openTerminal();
     };
     els.authActions.appendChild(btn);
   }
