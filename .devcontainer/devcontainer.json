@@ -1,0 +1,18 @@
+{
+  "name": "ACP Control",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "forwardPorts": [12000],
+  "portsAttributes": {
+    "12000": {
+      "label": "ACP Control",
+      "onAutoForward": "openBrowser",
+      "visibility": "public"
+    }
+  },
+  "postCreateCommand": "bash acp-control/scripts/install-agents.sh && bash acp-control/scripts/codespace-start.sh",
+  "postStartCommand": "bash acp-control/scripts/codespace-start.sh",
+  "postAttachCommand": "bash acp-control/scripts/codespace-start.sh"
+}
