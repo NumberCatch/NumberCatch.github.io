@@ -166,6 +166,13 @@ async function forwardOauthCallback(rawUrl) {
 
 acpWss.on('connection', (ws) => {
   let bridge = null;
+  let isAlive = true;
+  const heartbeat = setInterval(() => {
+    if (!isAlive) return ws.terminate();
+    isAlive = false;
+    ws.ping();
+  }, 25_000);
+  ws.on('pong', () => { isAlive = true; });
 
   const detach = () => {
     if (!bridge) return;
@@ -222,7 +229,24 @@ acpWss.on('connection', (ws) => {
             authMethods: bridge.authMethods,
             capabilities: bridge.agentCapabilities,
           });
-          await startSession(ws, bridge);
+          if (msg.sessionId) {
+            try {
+              const session = await bridge.loadSession(msg.sessionId);
+              send(ws, {
+                type: 'session',
+                sessionId: bridge.sessionId,
+                modes: session.modes || null,
+                configOptions: session.configOptions || null,
+                loaded: true,
+              });
+            } catch {
+              // Some ACP agents do not retain sessions across processes. Start a
+              // fresh one while keeping the locally saved transcript visible.
+              await startSession(ws, bridge);
+            }
+          } else {
+            await startSession(ws, bridge);
+          }
           break;
         }
         case 'prompt': {
@@ -294,7 +318,10 @@ acpWss.on('connection', (ws) => {
     }
   });
 
-  ws.on('close', detach);
+  ws.on('close', () => {
+    clearInterval(heartbeat);
+    detach();
+  });
   send(ws, { type: 'hello', agents: agentList(), workspace: config.workspace });
 });
 

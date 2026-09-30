@@ -4,9 +4,11 @@ const els = {
   wsState: $('ws-state'),
   agentSelect: $('agent-select'),
   connect: $('connect'),
+  settings: $('settings'),
+  settingsToggle: $('settings-toggle'),
+  settingsOptions: $('settings-options'),
   newSession: $('new-session'),
   terminalToggle: $('terminal-toggle'),
-  agentMeta: $('agent-meta'),
   chat: $('chat'),
   composer: $('composer'),
   input: $('input'),
@@ -30,6 +32,60 @@ let streamingEl = null;
 let activeTurn = false;
 let termWs = null;
 let authMethods = [];
+let intentionalClose = false;
+let everConnected = false;
+const HISTORY_PREFIX = 'acp.history.';
+
+function historyKey(agentId) {
+  return `${HISTORY_PREFIX}${agentId}`;
+}
+
+function restoreHistory(agentId) {
+  clearChat();
+  try {
+    const saved = JSON.parse(localStorage.getItem(historyKey(agentId)) || 'null');
+    if (!saved || typeof saved.html !== 'string') return null;
+    // Stored markup is parsed detached and rebuilt from a small allowlist before
+    // it is placed in the live document. Pending buttons are deliberately not restored.
+    const template = document.createElement('template');
+    template.innerHTML = saved.html;
+    const allowed = new Set(['DIV', 'DETAILS', 'SUMMARY', 'SPAN', 'PRE', 'H4']);
+    const clean = (node) => {
+      if (node.nodeType === Node.TEXT_NODE) return document.createTextNode(node.textContent);
+      if (node.nodeType !== Node.ELEMENT_NODE) return null;
+      if (!allowed.has(node.tagName) || node.matches('.perm, button, script, style')) return null;
+      const copy = document.createElement(node.tagName.toLowerCase());
+      if (node.className) copy.className = node.className;
+      if (node.tagName === 'DETAILS' && node.open) copy.open = true;
+      if (node.dataset.toolId) copy.dataset.toolId = node.dataset.toolId;
+      for (const child of node.childNodes) {
+        const safe = clean(child);
+        if (safe) copy.appendChild(safe);
+      }
+      return copy;
+    };
+    for (const child of template.content.childNodes) {
+      const safe = clean(child);
+      if (safe) els.chat.appendChild(safe);
+    }
+    scrollDown();
+    return saved;
+  } catch {
+    localStorage.removeItem(historyKey(agentId));
+    return null;
+  }
+}
+
+function saveHistory(agentId = connectedAgentId) {
+  if (!agentId) return;
+  try {
+    const old = JSON.parse(localStorage.getItem(historyKey(agentId)) || '{}');
+    localStorage.setItem(historyKey(agentId), JSON.stringify({
+      sessionId: old.sessionId || null,
+      html: els.chat.innerHTML.slice(-500_000),
+    }));
+  } catch { /* Storage may be unavailable or full; chat remains usable. */ }
+}
 
 // Die WebSocket-URL wird relativ zur aktuellen Seiten-URL gebildet, damit in
 // GitHub Codespaces nie eine URL eingetragen werden muss.
@@ -45,6 +101,20 @@ function toast(message, ms = 4000) {
   toast._t = setTimeout(() => els.toast.classList.add('hidden'), ms);
 }
 
+function showReconnectNotice(message) {
+  toast(message, 12000);
+  const reconnect = document.createElement('button');
+  reconnect.className = 'toast-action';
+  reconnect.textContent = 'Erneut verbinden';
+  reconnect.onclick = () => {
+    els.settings.classList.remove('hidden');
+    els.settingsToggle.setAttribute('aria-expanded', 'true');
+    connect();
+    els.toast.classList.add('hidden');
+  };
+  els.toast.appendChild(reconnect);
+}
+
 function setState(text, cls = 'muted') {
   els.wsState.textContent = text;
   els.wsState.className = cls;
@@ -55,12 +125,16 @@ function clearChat() {
   streamingEl = null;
 }
 
+const chatObserver = new MutationObserver(() => saveHistory());
+chatObserver.observe(els.chat, { childList: true, characterData: true, subtree: true });
+
 function addMessage(role, text) {
+  const follow = isNearBottom();
   const el = document.createElement('div');
   el.className = `msg ${role}`;
   el.textContent = text;
   els.chat.appendChild(el);
-  scrollDown();
+  if (follow) scrollDown();
   return el;
 }
 
@@ -68,7 +142,11 @@ function scrollDown() {
   els.chat.scrollTop = els.chat.scrollHeight;
 }
 
-function renderAgents(list, workspace) {
+function isNearBottom() {
+  return els.chat.scrollHeight - els.chat.scrollTop - els.chat.clientHeight < 100;
+}
+
+function renderAgents(list) {
   agents = list;
   els.agentSelect.innerHTML = '';
   for (const agent of list) {
@@ -79,11 +157,6 @@ function renderAgents(list, workspace) {
   }
   const stored = localStorage.getItem('acp.agent');
   if (stored && list.some((a) => a.id === stored)) els.agentSelect.value = stored;
-  els.agentMeta.innerHTML = '';
-  const chip = document.createElement('span');
-  chip.className = 'chip';
-  chip.textContent = `Workspace: ${workspace}`;
-  els.agentMeta.appendChild(chip);
 }
 
 function currentAgent() {
@@ -96,25 +169,30 @@ function connect() {
   localStorage.setItem('acp.agent', agent.id);
 
   if (ws) {
+    intentionalClose = true;
     ws.close();
     ws = null;
   }
-  clearChat();
+  const saved = restoreHistory(agent.id);
   els.authPanel.classList.add('hidden');
   connectedAgentId = agent.id;
   setState(`verbinde mit ${agent.name} …`);
 
   ws = new WebSocket(wsUrl('/acp-ws'));
+  const thisWs = ws;
+  intentionalClose = false;
   ws.onopen = () => {
-    ws.send(JSON.stringify({ type: 'connect', agentId: agent.id }));
+    if (ws === thisWs) thisWs.send(JSON.stringify({ type: 'connect', agentId: agent.id, sessionId: saved?.sessionId || null }));
   };
   ws.onclose = () => {
+    if (ws !== thisWs) return;
     setState('getrennt', 'muted');
     activeTurn = false;
     setTurnUi(false);
+    if (!intentionalClose && everConnected) showReconnectNotice('Verbindung abgebrochen.');
   };
-  ws.onerror = () => setState('Verbindungsfehler', 'muted');
-  ws.onmessage = (ev) => handleMessage(JSON.parse(ev.data));
+  ws.onerror = () => { if (ws === thisWs) setState('Verbindungsfehler', 'muted'); };
+  ws.onmessage = (ev) => { if (ws === thisWs) handleMessage(JSON.parse(ev.data)); };
 }
 
 function sendWs(msg) {
@@ -128,11 +206,13 @@ function setTurnUi(running) {
 }
 
 function handleMessage(msg) {
+  const follow = isNearBottom();
   switch (msg.type) {
     case 'hello':
-      renderAgents(msg.agents, msg.workspace);
+      renderAgents(msg.agents);
       break;
     case 'ready':
+      everConnected = true;
       setState(`${msg.agent.name} verbunden`, '');
       authMethods = msg.authMethods || [];
       addMessage('system', `${msg.agent.name} · ${msg.agentInfo?.version || ''}`.trim());
@@ -145,8 +225,15 @@ function handleMessage(msg) {
       els.authPanel.classList.add('hidden');
       break;
     case 'session':
+      try {
+        const old = JSON.parse(localStorage.getItem(historyKey(connectedAgentId)) || '{}');
+        old.sessionId = msg.sessionId;
+        localStorage.setItem(historyKey(connectedAgentId), JSON.stringify({ ...old, html: els.chat.innerHTML }));
+      } catch { /* Storage is optional. */ }
+      els.settingsOptions.replaceChildren();
       addMessage('system', `Session ${msg.sessionId}${msg.loaded ? ' geladen' : ''}`);
       if (msg.modes?.availableModes?.length) renderModes(msg.modes);
+      if (msg.configOptions?.length) renderConfigOptions(msg.configOptions);
       break;
     case 'authRequired':
       authMethods = msg.authMethods || authMethods;
@@ -179,6 +266,7 @@ function handleMessage(msg) {
     case 'exit':
       setState(`Agent beendet (${msg.code ?? msg.signal ?? '?'})`);
       setTurnUi(false);
+      showReconnectNotice('Der Agent-Prozess wurde beendet.');
       break;
     case 'error':
       setTurnUi(false);
@@ -198,7 +286,7 @@ function handleMessage(msg) {
     default:
       break;
   }
-  scrollDown();
+  if (follow) scrollDown();
 }
 
 function renderUpdate(params) {
@@ -228,10 +316,17 @@ function renderUpdate(params) {
       renderCommands(update);
       break;
     case 'current_mode_update':
-      if (update.currentModeId) addMessage('system', `Modus: ${update.currentModeId}`);
+      if (update.currentModeId) {
+        for (const btn of els.settingsOptions.querySelectorAll('[data-mode-id]')) {
+          btn.classList.toggle('warn', btn.dataset.modeId === update.currentModeId);
+        }
+      }
       break;
     case 'config_option_update':
-      addMessage('system', `Konfiguration aktualisiert`);
+      if (update.configId) {
+        const select = [...els.settingsOptions.querySelectorAll('select')].find((item) => item.dataset.configId === update.configId);
+        if (select) select.value = update.value;
+      }
       break;
     default:
       break;
@@ -311,21 +406,50 @@ function renderPermission(msg) {
   }
   el.appendChild(options);
   els.chat.appendChild(el);
-  scrollDown();
 }
 
 function renderModes(modes) {
   const el = document.createElement('div');
-  el.className = 'agent-meta';
+  el.className = 'option-group';
+  const label = document.createElement('strong');
+  label.textContent = 'Modus';
+  el.appendChild(label);
   for (const mode of modes.availableModes) {
     const btn = document.createElement('button');
-    btn.className = 'chip';
+    btn.className = 'option-chip';
+    btn.dataset.modeId = mode.id;
     btn.textContent = mode.name || mode.id;
     if (mode.id === modes.currentModeId) btn.classList.add('warn');
     btn.onclick = () => sendWs({ type: 'setMode', modeId: mode.id });
     el.appendChild(btn);
   }
-  els.chat.appendChild(el);
+  els.settingsOptions.replaceChildren(el);
+}
+
+function renderConfigOptions(configOptions) {
+  const groups = [...els.settingsOptions.querySelectorAll('.option-group')];
+  for (const option of configOptions) {
+    const group = document.createElement('label');
+    group.className = 'config-option';
+    const title = document.createElement('strong');
+    title.textContent = option.name || option.id;
+    group.appendChild(title);
+    const select = document.createElement('select');
+    select.setAttribute('aria-label', option.name || option.id);
+    select.dataset.configId = option.configId || option.id;
+    for (const choice of option.options || []) {
+      const item = document.createElement('option');
+      item.value = choice.value;
+      item.textContent = choice.name || choice.value;
+      select.appendChild(item);
+    }
+    select.value = option.currentValue ?? '';
+    select.disabled = !option.options?.length;
+    select.onchange = () => sendWs({ type: 'setConfigOption', configId: option.configId || option.id, value: select.value });
+    group.appendChild(select);
+    groups.push(group);
+  }
+  els.settingsOptions.replaceChildren(...groups);
 }
 
 function showAuth() {
@@ -491,8 +615,13 @@ function sendTerminalLine(text) {
 
 els.connect.onclick = connect;
 els.agentSelect.onchange = () => connect();
+els.settingsToggle.onclick = () => {
+  const open = els.settings.classList.toggle('hidden') === false;
+  els.settingsToggle.setAttribute('aria-expanded', String(open));
+};
 els.newSession.onclick = () => {
   clearChat();
+  if (connectedAgentId) localStorage.removeItem(historyKey(connectedAgentId));
   sendWs({ type: 'newSession' });
 };
 els.stop.onclick = () => sendWs({ type: 'cancel' });
@@ -502,6 +631,7 @@ els.composer.onsubmit = (ev) => {
   const text = els.input.value.trim();
   if (!text || activeTurn) return;
   addMessage('user', text);
+  scrollDown();
   els.input.value = '';
   els.input.style.height = 'auto';
   setTurnUi(true);
@@ -550,7 +680,7 @@ const hello = new WebSocket(wsUrl('/acp-ws'));
 hello.onmessage = (ev) => {
   const msg = JSON.parse(ev.data);
   if (msg.type === 'hello') {
-    renderAgents(msg.agents, msg.workspace);
+    renderAgents(msg.agents);
     hello.close();
     if (currentAgent()?.available) connect();
     else setState('Agent auswählen');

@@ -28,19 +28,19 @@
         <button id="new-session" class="icon-btn" title="Neue Session" aria-label="Neue Session">
           ＋
         </button>
-        <button id="terminal-toggle" class="icon-btn" title="Terminal" aria-label="Terminal">
-          ⌨
-        </button>
+        <button id="settings-toggle" class="icon-btn" title="Einstellungen" aria-label="Einstellungen" aria-expanded="false">⚙</button>
       </div>
     </header>
 
-    <section class="picker" id="picker">
-      <label for="agent-select" class="sr-only">KI-Agent wählen</label>
-      <select id="agent-select" aria-label="KI-Agent wählen"></select>
-      <button id="connect" class="primary">Verbinden</button>
+    <section class="settings hidden" id="settings">
+      <div class="settings-row">
+        <label for="agent-select">Agent</label>
+        <select id="agent-select" aria-label="KI-Agent wählen"></select>
+        <button id="connect" class="primary">Verbinden</button>
+      </div>
+      <div id="settings-options" class="settings-options"></div>
+      <button id="terminal-toggle" class="settings-terminal">Terminal öffnen</button>
     </section>
-
-    <div id="agent-meta" class="agent-meta"></div>
 
     <main id="chat" class="chat" aria-live="polite"></main>
 
