@@ -250,9 +250,10 @@ export class MapComponent implements OnInit, OnDestroy {
       );
     if (this.view() === 'nextFive') {
       sightings = sightings
-        .filter((sighting) => sighting.number > currentNumber)
-        .sort((left, right) => left.number - right.number)
-        .slice(0, 5);
+        .filter(
+          (sighting) =>
+            sighting.number > currentNumber && sighting.number <= currentNumber + 5,
+        );
     } else if (this.view() === 'open') {
       sightings = sightings.filter((sighting) => sighting.number > currentNumber);
     } else if (this.view() === 'completed') {
