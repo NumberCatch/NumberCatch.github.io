@@ -58,6 +58,14 @@ describe('MapComponent filters', () => {
     ]);
   });
 
+  it('excludes sightings beyond the next five number range', () => {
+    const component = TestBed.runInInjectionContext(() => new MapComponent());
+    component.sightings.set(sightings().filter((sighting) => [11, 16].includes(sighting.number)));
+    component.view.set('nextFive');
+
+    expect(component.visibleSightings().map((sighting) => sighting.number)).toEqual([11]);
+  });
+
   it('keeps the shared GPS position when the map component is recreated', () => {
     currentPosition.set({ coords: { latitude: 50, longitude: 8, accuracy: 10 } });
 
