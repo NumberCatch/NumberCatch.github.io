@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1"
+    />
+    <meta name="theme-color" content="#0b0f17" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <title>ACP Control</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icon.svg" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo" aria-hidden="true"></span>
+        <div>
+          <strong>ACP Control</strong>
+          <small id="ws-state" class="muted">verbinde …</small>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button id="new-session" class="icon-btn" title="Neue Session" aria-label="Neue Session">
+          ＋
+        </button>
+        <button id="settings-toggle" class="icon-btn" title="Einstellungen" aria-label="Einstellungen" aria-expanded="false">⚙</button>
+      </div>
+    </header>
+
+    <section class="settings hidden" id="settings">
+      <div class="settings-row">
+        <label for="agent-select">Agent</label>
+        <select id="agent-select" aria-label="KI-Agent wählen"></select>
+        <button id="connect" class="primary">Verbinden</button>
+      </div>
+      <div id="settings-options" class="settings-options"></div>
+      <button id="terminal-toggle" class="settings-terminal">Terminal öffnen</button>
+    </section>
+
+    <main id="chat" class="chat" aria-live="polite"></main>
+
+    <section id="auth-panel" class="auth-panel hidden">
+      <h3>Anmeldung erforderlich</h3>
+      <p id="auth-hint" class="muted"></p>
+      <div id="auth-actions" class="auth-actions"></div>
+    </section>
+
+    <form id="composer" class="composer">
+      <textarea
+        id="input"
+        rows="1"
+        placeholder="Nachricht an den Agenten …"
+        autocomplete="off"
+        enterkeyhint="send"
+      ></textarea>
+      <button type="button" id="stop" class="stop hidden" aria-label="Stoppen">■</button>
+      <button type="submit" id="send" class="primary" aria-label="Senden">➤</button>
+    </form>
+
+    <aside id="terminal" class="terminal hidden" aria-label="Terminal">
+      <div class="terminal-head">
+        <span>Terminal (Login / Installation)</span>
+        <div class="terminal-keys">
+          <button data-key="\u0003" title="Ctrl+C">^C</button>
+          <button data-key="\u001b[A" title="Hoch">↑</button>
+          <button data-key="\u001b[B" title="Runter">↓</button>
+          <button id="terminal-close" title="Schließen">✕</button>
+        </div>
+      </div>
+      <pre id="terminal-out"></pre>
+      <div class="terminal-input">
+        <input id="terminal-line" placeholder="Eingabe + Enter …" autocomplete="off" />
+        <button id="terminal-send">Enter</button>
+      </div>
+    </aside>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

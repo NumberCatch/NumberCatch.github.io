@@ -1,0 +1,40 @@
+{
+  "agents": [
+    {
+      "id": "codex",
+      "name": "Codex",
+      "description": "OpenAI Codex CLI über ChatGPT-Login (kostenloses Kontingent, kein API-Key)",
+      "icon": "codex",
+      "command": "codex-acp",
+      "args": [],
+      "env": {},
+      "install": "npm install -g @agentclientprotocol/codex-acp",
+      "loginCommand": "codex login --device-auth",
+      "loginHint": "Führt einen Geräte-Login aus. Den angezeigten Code auf einer beliebigen Seite unter https://chatgpt.com/device eingeben. Voraussetzung: Geräte-Anmeldung im ChatGPT-Konto freigeschaltet."
+    },
+    {
+      "id": "agy",
+      "name": "Antigravity",
+      "description": "Google Antigravity (agy) über den offiziellen ACP-Server",
+      "icon": "antigravity",
+      "command": "${ACP_HOME}/agents/agy_acp_server.par",
+      "args": ["--uid=${USER}", "--enforce_kernel_ipv6_support=false"],
+      "env": {},
+      "install": "bash scripts/install-agents.sh",
+      "loginCommand": "agy",
+      "loginHint": "agy startet und druckt eine Login-URL. Auf dem Handy die URL öffnen, bei Google anmelden und die anschließend aufgerufene 127.0.0.1-Adresse aus der Adressleiste unten einfügen – sie wird an den wartenden Login-Server im Codespace weitergereicht."
+    },
+    {
+      "id": "copilot",
+      "name": "GitHub Copilot",
+      "description": "GitHub Copilot CLI im ACP-Modus (öffentliche Vorschau)",
+      "icon": "copilot",
+      "command": "copilot",
+      "args": ["--acp"],
+      "env": {},
+      "install": "npm install -g @github/copilot",
+      "loginCommand": "copilot login",
+      "loginHint": "Startet den GitHub-Geräte-Login (Device Flow). Den angezeigten Code auf https://github.com/login/device eingeben. Erfordert ein aktives Copilot-Abo."
+    }
+  ]
+}

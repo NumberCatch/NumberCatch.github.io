@@ -1,0 +1,21 @@
+{
+  "name": "acp-control",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Mobile Web-Interface zur Steuerung von KI-Agenten (Codex, Antigravity, Copilot) über das Agent Client Protocol",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "install-agents": "bash scripts/install-agents.sh",
+    "test": "node --test --test-force-exit test/*.test.mjs"
+  },
+  "dependencies": {
+    "@agentclientprotocol/sdk": "1.5.1",
+    "node-pty": "^1.0.0",
+    "ws": "^8.18.0"
+  }
+}
