@@ -146,6 +146,29 @@ describe('CaptureComponent', () => {
     vi.useRealTimers();
   });
 
+  it('returns focus to the number input after saving a reservation', async () => {
+    supabase.saveSighting.mockResolvedValue(initialProfile);
+    component.number = 52;
+    const input: HTMLInputElement = fixture.nativeElement.querySelector('input[name="number"]');
+    const focus = vi.spyOn(input, 'focus');
+
+    await component.submit();
+    await new Promise((resolve) => window.setTimeout(resolve, 10));
+
+    expect(focus).toHaveBeenCalledOnce();
+    expect(component.number).toBeNull();
+  });
+
+  it('does not return focus to the number input after confirming the next number', async () => {
+    const input: HTMLInputElement = fixture.nativeElement.querySelector('input[name="number"]');
+    const focus = vi.spyOn(input, 'focus');
+
+    await component.submit();
+    await new Promise((resolve) => window.setTimeout(resolve, 10));
+
+    expect(focus).not.toHaveBeenCalled();
+  });
+
   it('allows repeated future hints without increasing progress', async () => {
     supabase.saveSighting.mockResolvedValue(initialProfile);
     for (let attempt = 0; attempt < 2; attempt++) {

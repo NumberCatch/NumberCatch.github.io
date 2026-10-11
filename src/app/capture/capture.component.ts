@@ -1,4 +1,12 @@
-import { Component, OnInit, inject, signal, ChangeDetectionStrategy } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  OnInit,
+  ViewChild,
+  inject,
+  signal,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ActivatedRoute } from '@angular/router';
@@ -23,6 +31,7 @@ export class CaptureComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
   private readonly route = inject(ActivatedRoute);
   private readonly locationPreferenceStorageKey = 'number-catch-save-location';
+  @ViewChild('numberInput') private numberInput?: ElementRef<HTMLInputElement>;
   number: number | null = null;
   note = '';
   saveLocation = this.loadLocationPreference();
@@ -70,6 +79,7 @@ export class CaptureComponent implements OnInit {
       return;
     }
     const result = this.game.classify(profile.current_number, number);
+    let refocusReservationInput = false;
     this.saving.set(true);
     try {
       if (
@@ -112,6 +122,7 @@ export class CaptureComponent implements OnInit {
         note: note || null,
       });
       this.auth.profile.set(updatedProfile);
+      refocusReservationInput = result.kind !== 'next';
       const saveSummary =
         result.kind === 'next'
           ? `${result.number} gespeichert - dein Fortschritt wurde erhöht.`
@@ -133,6 +144,9 @@ export class CaptureComponent implements OnInit {
     } finally {
       this.locating.set(false);
       this.saving.set(false);
+      if (refocusReservationInput) {
+        window.setTimeout(() => this.numberInput?.nativeElement.focus(), 0);
+      }
     }
   }
 
