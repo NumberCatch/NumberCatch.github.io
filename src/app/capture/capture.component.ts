@@ -92,6 +92,7 @@ export class CaptureComponent implements OnInit {
       ) {
         this.number = null;
         this.note = '';
+        refocusReservationInput = true;
         return;
       }
       this.locating.set(this.saveLocation);
@@ -110,6 +111,7 @@ export class CaptureComponent implements OnInit {
         if (!saveDuplicate) {
           this.number = null;
           this.note = '';
+          refocusReservationInput = true;
           return;
         }
       }

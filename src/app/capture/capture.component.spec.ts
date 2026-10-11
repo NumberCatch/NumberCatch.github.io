@@ -316,17 +316,35 @@ describe('CaptureComponent', () => {
     expect(supabase.saveSighting).toHaveBeenCalledOnce();
   });
 
-  it('does not save a nearby duplicate when confirmation is declined', async () => {
+  it('does not save a nearby duplicate when confirmation is declined and returns focus', async () => {
     component.saveLocation = true;
     geolocation.activate.mockResolvedValue(position(50));
     supabase.ownSightings.mockResolvedValue([sighting(52, 50.0005, 8)]);
     component.number = 52;
     vi.spyOn(component as unknown as ConfirmingCapture, 'confirm').mockResolvedValue(false);
+    const input: HTMLInputElement = fixture.nativeElement.querySelector('input[name="number"]');
+    const focus = vi.spyOn(input, 'focus');
 
     await component.submit();
+    await new Promise((resolve) => window.setTimeout(resolve, 10));
 
     expect(supabase.saveSighting).not.toHaveBeenCalled();
     expect(component.number).toBeNull();
+    expect(focus).toHaveBeenCalledOnce();
+  });
+
+  it('returns focus when declining to save a past number', async () => {
+    component.number = 20;
+    vi.spyOn(component as unknown as ConfirmingCapture, 'confirm').mockResolvedValue(false);
+    const input: HTMLInputElement = fixture.nativeElement.querySelector('input[name="number"]');
+    const focus = vi.spyOn(input, 'focus');
+
+    await component.submit();
+    await new Promise((resolve) => window.setTimeout(resolve, 10));
+
+    expect(supabase.saveSighting).not.toHaveBeenCalled();
+    expect(component.number).toBeNull();
+    expect(focus).toHaveBeenCalledOnce();
   });
 
   it('stores the location preference without starting GPS', () => {
