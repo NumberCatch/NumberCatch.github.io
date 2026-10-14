@@ -167,6 +167,10 @@ export class MapComponent implements OnInit, OnDestroy {
     }
   }
 
+  ngOnInit(): void {
+    void this.load();
+  }
+
   ngOnDestroy(): void {
     this.map = undefined;
   }
