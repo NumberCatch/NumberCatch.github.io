@@ -35,7 +35,7 @@ import {
 
 type SightingStatus = 'confirmed' | 'fresh' | 'old' | 'stale';
 type SightingSort = 'number' | 'newest' | 'distance';
-type SightingView = 'all' | 'nextFive' | 'open' | 'completed';
+type SightingView = 'all' | 'next' | 'nextFive' | 'open' | 'completed';
 type MapCenter = [number, number];
 
 interface MapFilterPreferences {
@@ -98,6 +98,7 @@ export class MapComponent implements OnInit, OnDestroy {
   ];
   readonly viewOptions: ReadonlyArray<{ view: SightingView; label: string }> = [
     { view: 'all', label: 'Alle' },
+    { view: 'next', label: 'Nächste Zahl' },
     { view: 'nextFive', label: 'Nächste 5' },
     { view: 'open', label: 'Offen' },
     { view: 'completed', label: 'Abgeschlossen' },
@@ -135,10 +136,6 @@ export class MapComponent implements OnInit, OnDestroy {
 
   onMapLoad(map: MapLibreMap): void {
     this.map = map;
-  }
-
-  ngOnInit(): void {
-    void this.load();
   }
 
   onMoveEnd(): void {
@@ -248,12 +245,13 @@ export class MapComponent implements OnInit, OnDestroy {
         (sighting) =>
           !this.gpsOnly() || (sighting.latitude !== null && sighting.longitude !== null),
       );
-    if (this.view() === 'nextFive') {
-      sightings = sightings
-        .filter(
-          (sighting) =>
-            sighting.number > currentNumber && sighting.number <= currentNumber + 5,
-        );
+    if (this.view() === 'next') {
+      sightings = sightings.filter((sighting) => sighting.number === currentNumber + 1);
+    } else if (this.view() === 'nextFive') {
+      sightings = sightings.filter(
+        (sighting) =>
+          sighting.number > currentNumber && sighting.number <= currentNumber + 5,
+      );
     } else if (this.view() === 'open') {
       sightings = sightings.filter((sighting) => sighting.number > currentNumber);
     } else if (this.view() === 'completed') {
@@ -351,6 +349,7 @@ export class MapComponent implements OnInit, OnDestroy {
         visibleStatuses,
         view:
           preferences.view === 'all' ||
+          preferences.view === 'next' ||
           preferences.view === 'nextFive' ||
           preferences.view === 'open' ||
           preferences.view === 'completed'
