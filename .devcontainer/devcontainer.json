@@ -1,0 +1,25 @@
+{
+  "name": "NumberCatch (Codeman + Angular)",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "postStartCommand": "bash .devcontainer/start-dev.sh",
+  "portsAttributes": {
+    "3000": {
+      "label": "Codeman Dashboard",
+      "onAutoForward": "openBrowserOnce"
+    },
+    "4200": {
+      "label": "Angular Dev Server",
+      "onAutoForward": "openBrowserOnce"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["angular.ng-template", "dbaeumer.vscode-eslint", "esbenp.prettier-vscode"]
+    }
+  },
+  "remoteUser": "node"
+}
