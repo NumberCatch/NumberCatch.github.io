@@ -14,6 +14,10 @@
   --muted: #627d98;
   --surface: #ffffff;
   --line: #e6edf3;
+  --toast-error-bg: #f44336;
+  --toast-success-bg: #4caf50;
+  --toast-info-bg: #2196f3;
+  --toast-text: #ffffff;
 }
 
 * {
@@ -320,6 +324,46 @@ form {
 .empty-icon {
   width: 45px;
   height: 45px;
+}
+
+/* Material Snackbar Toast Customization */
+::ng-deep .error-toast {
+  background-color: var(--toast-error-bg) !important;
+  color: var(--toast-text) !important;
+}
+
+::ng-deep .error-toast .mdc-button__label {
+  color: var(--toast-text) !important;
+}
+
+::ng-deep .error-toast .mdc-snackbar__surface {
+  background-color: var(--toast-error-bg) !important;
+}
+
+::ng-deep .success-toast {
+  background-color: var(--toast-success-bg) !important;
+  color: var(--toast-text) !important;
+}
+
+::ng-deep .success-toast .mdc-button__label {
+  color: var(--toast-text) !important;
+}
+
+::ng-deep .success-toast .mdc-snackbar__surface {
+  background-color: var(--toast-success-bg) !important;
+}
+
+::ng-deep .info-toast {
+  background-color: var(--toast-info-bg) !important;
+  color: var(--toast-text) !important;
+}
+
+::ng-deep .info-toast .mdc-button__label {
+  color: var(--toast-text) !important;
+}
+
+::ng-deep .info-toast .mdc-snackbar__surface {
+  background-color: var(--toast-info-bg) !important;
 }
 
 @media (min-width: 700px) {
