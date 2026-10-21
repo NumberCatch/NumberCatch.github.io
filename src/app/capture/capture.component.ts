@@ -15,6 +15,7 @@ import { AuthService } from '../services/auth.service';
 import { GameService } from '../services/game.service';
 import { distanceInMeters, GeolocationService, LocationPosition } from '../services/geolocation';
 import { SupabaseService } from '../services/supabase.service';
+import { FireworksService } from '../services/fireworks.service';
 import { ConfirmDialog, ConfirmDialogData } from '../shared/confirm-dialog/confirm-dialog';
 
 @Component({
@@ -30,6 +31,7 @@ export class CaptureComponent implements OnInit {
   private readonly geolocation = inject(GeolocationService);
   private readonly dialog = inject(MatDialog);
   private readonly route = inject(ActivatedRoute);
+  private readonly fireworks = inject(FireworksService);
   private readonly locationPreferenceStorageKey = 'number-catch-save-location';
   @ViewChild('numberInput') private numberInput?: ElementRef<HTMLInputElement>;
   number: number | null = null;
@@ -124,6 +126,7 @@ export class CaptureComponent implements OnInit {
         note: note || null,
       });
       this.auth.profile.set(updatedProfile);
+      if (result.kind === 'next') this.fireworks.launch();
       refocusReservationInput = result.kind !== 'next';
       const saveSummary =
         result.kind === 'next'
