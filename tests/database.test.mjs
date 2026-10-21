@@ -223,3 +223,27 @@ test('the unique index also rejects duplicate confirmations outside the RPC', as
     '23505',
   );
 });
+
+
+test('group membership helper cannot inspect another user membership', async () => {
+  const groupId = (
+    await db.query(
+      "insert into public.groups (name, created_by) values ('Test group', $1) returning id",
+      [playerId],
+    )
+  ).rows[0].id;
+  await db.query(
+    'insert into public.group_members (group_id, user_id) values ($1, $2)',
+    [groupId, playerId],
+  );
+
+  assert.equal(
+    (await db.query('select public.is_group_member($1)', [groupId])).rows[0].is_group_member,
+    true,
+  );
+  assert.equal(
+    (await db.query('select public.is_group_member($1, $2)', [groupId, otherId])).rows[0]
+      .is_group_member,
+    false,
+  );
+});
