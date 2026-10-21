@@ -58,6 +58,18 @@ async function expectError(operation, code) {
   await db.exec('rollback to savepoint expected_error; release savepoint expected_error;');
 }
 
+test('creating an auth user creates a profile through the trigger', async () => {
+  await db.exec('reset role');
+  const newUserId = '00000000-0000-4000-8000-000000000003';
+
+  await db.query('insert into auth.users (id) values ($1)', [newUserId]);
+
+  assert.deepEqual(
+    (await db.query('select id from public.profiles where id = $1', [newUserId])).rows,
+    [{ id: newUserId }],
+  );
+});
+
 test('confirmation stores the sighting and advances only its owner', async () => {
   assert.equal((await capture(1, 'confirmed')).current_number, 1);
   const { rows } = await db.query('select user_id, number, type from public.sightings');
