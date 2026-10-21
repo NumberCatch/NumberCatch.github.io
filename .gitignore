@@ -4,3 +4,6 @@ dist/
 .env
 *.local
 TODO.md
+
+# dev container runtime logs
+.devcontainer/logs/

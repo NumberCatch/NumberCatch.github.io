@@ -72,6 +72,9 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
+          "options": {
+            "allowedHosts": [".app.github.dev", ".githubpreview.dev", ".github.dev"]
+          },
           "configurations": {
             "production": { "buildTarget": "number-catch:build:production" },
             "development": { "buildTarget": "number-catch:build:development" }
