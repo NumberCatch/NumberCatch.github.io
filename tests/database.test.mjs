@@ -259,3 +259,33 @@ test('group membership helper cannot inspect another user membership', async () 
     false,
   );
 });
+
+
+test('performance migration adds foreign-key indexes and consolidates group reads', async () => {
+  await db.exec('reset role');
+
+  const indexes = (
+    await db.query(
+      "select indexname from pg_indexes where schemaname = 'public' and indexname = any($1::text[]) order by indexname",
+      [[
+        'group_members_user_id_idx',
+        'groups_created_by_idx',
+        'sightings_shared_group_id_idx',
+      ]],
+    )
+  ).rows.map((row) => row.indexname);
+
+  assert.deepEqual(indexes, [
+    'group_members_user_id_idx',
+    'groups_created_by_idx',
+    'sightings_shared_group_id_idx',
+  ]);
+
+  const groupReadPolicies = (
+    await db.query(
+      "select policyname from pg_policies where schemaname = 'public' and tablename = 'groups' and cmd = 'SELECT' order by policyname",
+    )
+  ).rows.map((row) => row.policyname);
+
+  assert.deepEqual(groupReadPolicies, ['creators and members read groups']);
+});
