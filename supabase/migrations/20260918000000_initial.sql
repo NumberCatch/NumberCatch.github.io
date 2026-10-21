@@ -12,3 +12,13 @@ create policy "own sightings read" on public.sightings for select using (user_id
 create or replace function public.handle_new_user() returns trigger language plpgsql security definer set search_path = public as $$ begin insert into public.profiles (id, display_name) values (new.id, coalesce(new.raw_user_meta_data->>'display_name', 'Spieler')); return new; end; $$;
 create trigger on_auth_user_created after insert on auth.users for each row execute procedure public.handle_new_user();
 alter publication supabase_realtime add table public.profiles, public.sightings, public.group_members;
+
+-- Explicit Data API privileges for fresh projects and local resets.
+grant usage on schema public to anon, authenticated, service_role;
+grant usage on type public.sighting_type to anon, authenticated, service_role;
+grant select on public.profiles, public.groups, public.group_members, public.sightings to anon;
+grant select on public.profiles, public.groups, public.group_members, public.sightings to authenticated;
+grant insert, update on public.profiles to authenticated;
+grant insert on public.groups, public.group_members to authenticated;
+grant delete on public.sightings to authenticated;
+grant all privileges on public.profiles, public.groups, public.group_members, public.sightings to service_role;
