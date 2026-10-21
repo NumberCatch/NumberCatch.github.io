@@ -58,6 +58,18 @@ async function expectError(operation, code) {
   await db.exec('rollback to savepoint expected_error; release savepoint expected_error;');
 }
 
+test('creating an auth user creates a profile through the trigger', async () => {
+  await db.exec('reset role');
+  const newUserId = '00000000-0000-4000-8000-000000000003';
+
+  await db.query('insert into auth.users (id) values ($1)', [newUserId]);
+
+  assert.deepEqual(
+    (await db.query('select id from public.profiles where id = $1', [newUserId])).rows,
+    [{ id: newUserId }],
+  );
+});
+
 test('confirmation stores the sighting and advances only its owner', async () => {
   assert.equal((await capture(1, 'confirmed')).current_number, 1);
   const { rows } = await db.query('select user_id, number, type from public.sightings');
@@ -222,4 +234,58 @@ test('the unique index also rejects duplicate confirmations outside the RPC', as
       ]),
     '23505',
   );
+});
+
+
+test('group membership helper cannot inspect another user membership', async () => {
+  const groupId = (
+    await db.query(
+      "insert into public.groups (name, created_by) values ('Test group', $1) returning id",
+      [playerId],
+    )
+  ).rows[0].id;
+  await db.query(
+    'insert into public.group_members (group_id, user_id) values ($1, $2)',
+    [groupId, playerId],
+  );
+
+  assert.equal(
+    (await db.query('select public.is_group_member($1)', [groupId])).rows[0].is_group_member,
+    true,
+  );
+  assert.equal(
+    (await db.query('select public.is_group_member($1, $2)', [groupId, otherId])).rows[0]
+      .is_group_member,
+    false,
+  );
+});
+
+
+test('performance migration adds foreign-key indexes and consolidates group reads', async () => {
+  await db.exec('reset role');
+
+  const indexes = (
+    await db.query(
+      "select indexname from pg_indexes where schemaname = 'public' and indexname = any($1::text[]) order by indexname",
+      [[
+        'group_members_user_id_idx',
+        'groups_created_by_idx',
+        'sightings_shared_group_id_idx',
+      ]],
+    )
+  ).rows.map((row) => row.indexname);
+
+  assert.deepEqual(indexes, [
+    'group_members_user_id_idx',
+    'groups_created_by_idx',
+    'sightings_shared_group_id_idx',
+  ]);
+
+  const groupReadPolicies = (
+    await db.query(
+      "select policyname from pg_policies where schemaname = 'public' and tablename = 'groups' and cmd = 'SELECT' order by policyname",
+    )
+  ).rows.map((row) => row.policyname);
+
+  assert.deepEqual(groupReadPolicies, ['creators and members read groups']);
 });
