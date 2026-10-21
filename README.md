@@ -15,6 +15,15 @@ npm start
 
 Die öffentliche Supabase-URL und der Publishable Key stehen in den Angular-Environment-Dateien. Im Frontend darf ausschließlich der öffentliche Publishable Key verwendet werden.
 
+### Feuerwerk lokal testen
+
+Auf der Seite **Erfassen** kann das Feuerwerk direkt über die DevTools-Konsole gestartet werden:
+
+```js
+numberCatchFireworks()
+```
+
+
 ## Supabase
 
 1. Neues Supabase-Projekt anlegen.

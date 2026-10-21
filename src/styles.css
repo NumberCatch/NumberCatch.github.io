@@ -26,6 +26,13 @@ body {
   color: var(--navy);
 }
 
+.fireworks-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  pointer-events: none;
+}
+
 button,
 a,
 input,
